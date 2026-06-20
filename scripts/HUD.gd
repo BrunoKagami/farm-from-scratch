@@ -29,7 +29,8 @@ func refresh_crop(crop: String) -> void:
 	crop_label.text = "Cultura: %s  ($%d)" % [crop, cost]
 
 func set_clock(hour: int, minute: int) -> void:
-	clock_label.text = "%02d:%02d" % [hour, minute]
+	var icon := "☀" if hour >= 6 and hour < 20 else "☾"
+	clock_label.text = "%s %02d:%02d" % [icon, hour, minute]
 
 func show_msg(text: String) -> void:
 	msg_label.text = text
