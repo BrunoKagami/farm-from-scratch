@@ -1,5 +1,6 @@
-[gd_scene load_steps=26 format=3 uid="uid://world_main"]
+[gd_scene load_steps=27 format=3 uid="uid://world_main"]
 
+[ext_resource type="Script" path="res://scripts/DayNight.gd" id="11_dn"]
 [ext_resource type="Script" path="res://scripts/WorldGrid.gd" id="1_wg"]
 [ext_resource type="Script" path="res://scripts/Player.gd" id="2_pl"]
 [ext_resource type="Script" path="res://scripts/WorldMap.gd" id="3_wm"]
@@ -101,6 +102,9 @@ size = Vector2(56, 39)
 [node name="World" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_wg")
+
+[node name="DayNight" type="Node" parent="."]
+script = ExtResource("11_dn")
 
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
 color = Color(1, 1, 1, 1)
