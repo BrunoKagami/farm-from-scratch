@@ -14,6 +14,10 @@ func _ready() -> void:
 		nm.player_disconnected.connect(_on_player_disconnected)
 		for peer_id in nm.players.keys():
 			_on_player_connected(peer_id)
+	# Cliente pede o estado completo ao servidor agora que o World está pronto
+	if not multiplayer.is_server() and \
+	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
+		rpc_id(1, "request_full_state")
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
@@ -37,9 +41,6 @@ func _on_player_connected(peer_id: int) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
-	# Fix 3: servidor envia estado atual dos tiles para o novo cliente
-	if multiplayer.is_server():
-		_send_full_state(peer_id)
 
 func _on_player_disconnected(peer_id: int) -> void:
 	if remote_players.has(peer_id):
@@ -57,7 +58,12 @@ func _spawn_remote_player(peer_id: int) -> void:
 	add_child(node)
 	remote_players[peer_id] = node
 
-# Fix 3: envia todos os tiles não-vazios para um cliente específico
+@rpc("any_peer", "reliable")
+func request_full_state() -> void:
+	if not multiplayer.is_server():
+		return
+	_send_full_state(multiplayer.get_remote_sender_id())
+
 func _send_full_state(peer_id: int) -> void:
 	for pos in tile_data.keys():
 		var td: Dictionary = tile_data[pos]
