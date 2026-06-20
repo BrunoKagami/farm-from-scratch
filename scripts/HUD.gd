@@ -1,9 +1,9 @@
 extends CanvasLayer
 
-@onready var money_label: Label  = $MoneyLabel
-@onready var inv_label: Label    = $InvLabel
-@onready var crop_label: Label   = $CropLabel
-@onready var shop_panel          = $ShopPanel
+@onready var money_label: Label = $MoneyLabel
+@onready var inv_label: Label   = $InvLabel
+@onready var crop_label: Label  = $CropLabel
+@onready var msg_label: Label   = $MsgLabel
 
 func _ready() -> void:
 	GameManager.money_changed.connect(_on_money_changed)
@@ -22,4 +22,11 @@ func refresh_inv() -> void:
 
 func refresh_crop(crop: String) -> void:
 	var cost: int = GameData.CROPS[crop]["seed_cost"]
-	crop_label.text = "Cultura: %s  (semente: $%d)" % [crop, cost]
+	crop_label.text = "Cultura: %s  ($%d)" % [crop, cost]
+
+func show_msg(text: String) -> void:
+	msg_label.text = text
+	msg_label.visible = true
+	# Esconde depois de 3 segundos
+	var t := get_tree().create_timer(3.0)
+	t.timeout.connect(func(): msg_label.visible = false)

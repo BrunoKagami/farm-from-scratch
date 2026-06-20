@@ -40,29 +40,43 @@ func _try_interact() -> void:
 	)
 	var world_grid := get_node_or_null("/root/World")
 	if world_grid == null:
+		_hud_msg("ERRO: World nao encontrado")
 		return
 	var tile: Node2D = world_grid.get_tile(grid_pos)
 	if tile == null:
+		_hud_msg("Fora da roca  pos:%s" % str(grid_pos))
 		return
 
 	var s: int = tile.get("state")
 	var my_id := multiplayer.get_unique_id()
 	var call_direct := multiplayer.multiplayer_peer is OfflineMultiplayerPeer \
-					   or multiplayer.is_server()
+	                   or multiplayer.is_server()
 
-	if s == 0:  # EMPTY — plantar
-		if not GameManager.spend_money(GameData.CROPS[selected_crop]["seed_cost"]):
+	if s == 0:
+		var cost: int = GameData.CROPS[selected_crop]["seed_cost"]
+		if not GameManager.spend_money(cost):
+			_hud_msg("Sem dinheiro! (precisa $%d)" % cost)
 			return
+		_hud_msg("Plantando %s..." % selected_crop)
 		if call_direct:
 			world_grid.server_plant(grid_pos, selected_crop, my_id)
 		else:
 			world_grid.rpc_id(1, "server_plant", grid_pos, selected_crop, my_id)
 
-	elif s == 2:  # READY — colher
+	elif s == 1:
+		_hud_msg("Aguardando crescer...")
+
+	elif s == 2:
+		_hud_msg("Colhendo!")
 		if call_direct:
 			world_grid.server_harvest(grid_pos, my_id)
 		else:
 			world_grid.rpc_id(1, "server_harvest", grid_pos, my_id)
+
+func _hud_msg(text: String) -> void:
+	var hud := get_node_or_null("/root/World/HUD")
+	if hud and hud.has_method("show_msg"):
+		hud.show_msg(text)
 
 func _update_anim(dir: Vector2) -> void:
 	if _anim == null:
