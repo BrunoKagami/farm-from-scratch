@@ -3,7 +3,7 @@ extends Node2D
 var tile_scene := preload("res://scenes/FarmTile.tscn")
 var tiles: Dictionary = {}
 var tile_data: Dictionary = {}
-var remote_players: Dictionary = {}  # peer_id -> PlayerRemote node
+var remote_players: Dictionary = {}
 var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
 func _ready() -> void:
@@ -41,11 +41,10 @@ func _add_action_key(action: String, key: Key) -> void:
 		ev.keycode = key
 		InputMap.action_add_event(action, ev)
 
-# --- Remote player visuals ---
+# --- Remote players ---
 
 func _on_player_connected(peer_id: int) -> void:
-	var my_id := multiplayer.get_unique_id()
-	if peer_id == my_id:
+	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
 
@@ -65,7 +64,7 @@ func _spawn_remote_player(peer_id: int) -> void:
 	add_child(node)
 	remote_players[peer_id] = node
 
-# --- Tile growth ---
+# --- Grow timer (only on server) ---
 
 func _process(delta: float) -> void:
 	if not multiplayer.is_server():
@@ -76,21 +75,21 @@ func _process(delta: float) -> void:
 			td["timer"] += delta
 			if td["timer"] >= td["duration"]:
 				td["state"] = 2
-				_broadcast_tile(pos)
+				_sync_tile_visual(pos)
+				_rpc_tile(pos)
 
 # --- Player position sync ---
 
 func send_player_state(pos: Vector2, vel: Vector2) -> void:
-	var my_id := multiplayer.get_unique_id()
 	if not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
-		rpc("_sync_player", my_id, pos, vel)
+		rpc("_sync_player", multiplayer.get_unique_id(), pos, vel)
 
 @rpc("any_peer", "unreliable")
 func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
 	if remote_players.has(peer_id):
 		remote_players[peer_id].update_state(pos, vel)
 
-# --- Plant / Harvest (chamados direto pelo host ou via RPC pelo cliente) ---
+# --- Plant / Harvest ---
 
 @rpc("any_peer", "reliable")
 func server_plant(grid_pos: Vector2i, crop: String, _requester_id: int) -> void:
@@ -105,7 +104,8 @@ func server_plant(grid_pos: Vector2i, crop: String, _requester_id: int) -> void:
 	td["crop"] = crop
 	td["timer"] = 0.0
 	td["duration"] = GameData.CROPS[crop]["grow_time"]
-	_broadcast_tile(grid_pos)
+	_sync_tile_visual(grid_pos)
+	_rpc_tile(grid_pos)
 
 @rpc("any_peer", "reliable")
 func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
@@ -122,8 +122,8 @@ func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
 	td["crop"] = ""
 	td["timer"] = 0.0
 	td["duration"] = 0.0
-	_broadcast_tile(grid_pos)
-	# Creditar no peer que colheu
+	_sync_tile_visual(grid_pos)
+	_rpc_tile(grid_pos)
 	if requester_id == multiplayer.get_unique_id():
 		_credit_harvest(crop, price)
 	else:
@@ -136,15 +136,24 @@ func _credit_harvest(crop: String, _price: int) -> void:
 	if hud and hud.has_method("refresh_inv"):
 		hud.refresh_inv()
 
-func _broadcast_tile(grid_pos: Vector2i) -> void:
+# Atualiza o visual do tile localmente (host)
+func _sync_tile_visual(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
-	rpc("_apply_tile", grid_pos, td["state"], td["crop"],
-	    td["timer"] / max(td["duration"], 1.0))
-	_apply_tile(grid_pos, td["state"], td["crop"],
-	            td["timer"] / max(td["duration"], 1.0))
+	var progress := td["timer"] / max(td["duration"], 1.0)
+	if tiles.has(grid_pos):
+		tiles[grid_pos].apply_state(td["state"], td["crop"], progress)
+
+# Envia estado do tile para clientes via RPC
+func _rpc_tile(grid_pos: Vector2i) -> void:
+	var td: Dictionary = tile_data[grid_pos]
+	var progress := td["timer"] / max(td["duration"], 1.0)
+	rpc("_apply_tile_client", grid_pos, td["state"], td["crop"], progress)
 
 @rpc("authority", "reliable")
-func _apply_tile(grid_pos: Vector2i, state: int, crop: String, progress: float) -> void:
-	tile_data[grid_pos] = { "state": state, "crop": crop, "timer": 0.0, "duration": 0.0 }
+func _apply_tile_client(grid_pos: Vector2i, state: int, crop: String, progress: float) -> void:
+	# Apenas clientes executam — host usa _sync_tile_visual diretamente
+	if multiplayer.is_server():
+		return
+	tile_data[grid_pos] = { "state": state, "crop": crop, "timer": 0.0, "duration": float(state == 1) * 999.0 }
 	if tiles.has(grid_pos):
 		tiles[grid_pos].apply_state(state, crop, progress)

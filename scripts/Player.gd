@@ -50,7 +50,7 @@ func _try_interact() -> void:
 	var s: int = tile.get("state")
 	var my_id := multiplayer.get_unique_id()
 	var call_direct := multiplayer.multiplayer_peer is OfflineMultiplayerPeer \
-	                   or multiplayer.is_server()
+					   or multiplayer.is_server()
 
 	if s == 0:
 		var cost: int = GameData.CROPS[selected_crop]["seed_cost"]
