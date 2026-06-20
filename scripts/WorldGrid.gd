@@ -139,14 +139,13 @@ func _credit_harvest(crop: String, _price: int) -> void:
 # Atualiza o visual do tile localmente (host)
 func _sync_tile_visual(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
-	var progress := td["timer"] / max(td["duration"], 1.0)
+	var progress: float = float(td["timer"]) / max(float(td["duration"]), 1.0)
 	if tiles.has(grid_pos):
 		tiles[grid_pos].apply_state(td["state"], td["crop"], progress)
 
-# Envia estado do tile para clientes via RPC
 func _rpc_tile(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
-	var progress := td["timer"] / max(td["duration"], 1.0)
+	var progress: float = float(td["timer"]) / max(float(td["duration"]), 1.0)
 	rpc("_apply_tile_client", grid_pos, td["state"], td["crop"], progress)
 
 @rpc("authority", "reliable")
