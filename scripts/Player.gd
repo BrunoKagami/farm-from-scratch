@@ -57,10 +57,13 @@ func _try_interact() -> void:
 					   or multiplayer.is_server()
 
 	if s == 0:
-		var cost: int = GameData.CROPS[selected_crop]["seed_cost"]
-		if not GameManager.spend_money(cost):
-			_hud_msg("Sem dinheiro! (precisa $%d)" % cost)
+		var seed_name: String = selected_crop + "_seed"
+		if not Inventory.remove(seed_name):
+			_hud_msg("Sem semente de %s!" % selected_crop)
 			return
+		var hud := get_node_or_null("/root/World/HUD")
+		if hud and hud.has_method("refresh_inv"):
+			hud.refresh_inv()
 		_hud_msg("Plantando %s..." % selected_crop)
 		if call_direct:
 			world_grid.server_plant(grid_pos, selected_crop, my_id)

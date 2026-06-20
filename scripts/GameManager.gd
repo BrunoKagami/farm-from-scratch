@@ -6,6 +6,8 @@ var money: int = 100
 
 func _ready() -> void:
 	print("Farm From Scratch — GameManager ready")
+	Inventory.add("lumifruit_seed", 3)
+	Inventory.add("voidroot_seed", 1)
 
 func add_money(amount: int) -> void:
 	money += amount
