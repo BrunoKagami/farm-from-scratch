@@ -65,6 +65,8 @@ func _process(delta: float) -> void:
 				td["state"] = 2
 				_sync_tile_visual(pos)
 				_rpc_tile(pos)
+			else:
+				_sync_tile_visual(pos)
 
 # --- Player position sync ---
 
