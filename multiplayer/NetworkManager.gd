@@ -40,13 +40,19 @@ func join(address: String) -> void:
 	multiplayer.multiplayer_peer = peer
 
 func _build_url(input: String) -> String:
-	if input.begins_with("ws://") or input.begins_with("wss://"):
-		return input
+	# Normaliza: remove trailing slash e converte http(s):// para ws(s)://
+	var s := input.strip_edges().trim_suffix("/")
+	if s.begins_with("https://"):
+		s = "wss://" + s.substr(8)
+	elif s.begins_with("http://"):
+		s = "ws://" + s.substr(7)
+	if s.begins_with("ws://") or s.begins_with("wss://"):
+		return s
 	var on_web := OS.has_feature("web")
-	if input == "localhost" or input.is_valid_ip_address():
+	if s == "localhost" or s.is_valid_ip_address():
 		var scheme := "wss" if on_web else "ws"
-		return "%s://%s:%d" % [scheme, input, PORT]
-	return "wss://%s" % input
+		return "%s://%s:%d" % [scheme, s, PORT]
+	return "wss://%s" % s
 
 func disconnect_from_game() -> void:
 	multiplayer.multiplayer_peer = null

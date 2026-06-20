@@ -25,8 +25,9 @@ func _on_join() -> void:
 	var addr := ip_input.text.strip_edges()
 	if addr.is_empty():
 		addr = "127.0.0.1"
-	get_node("/root/NetworkManager").join(addr)
-	status_label.text = "Conectando a %s…" % addr
+	var nm := get_node("/root/NetworkManager")
+	nm.join(addr)
+	status_label.text = "Conectando a\n%s…" % nm._build_url(addr)
 	host_btn.disabled = true
 	join_btn.disabled = true
 
