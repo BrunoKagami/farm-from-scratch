@@ -2,11 +2,17 @@ extends Node2D
 
 var _anim: AnimatedSprite2D
 
+var peer_id: int = 0
+
 func _ready() -> void:
 	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = _build_frames()
 	_anim.animation = &"idle_down"
 	_anim.play()
+	# Tint único por peer para diferenciar do jogador local
+	var rng := RandomNumberGenerator.new()
+	rng.seed = peer_id
+	_anim.modulate = Color.from_hsv(rng.randf(), 0.7, 1.0)
 	add_child(_anim)
 
 func _build_frames() -> SpriteFrames:
@@ -15,8 +21,8 @@ func _build_frames() -> SpriteFrames:
 	sf.remove_animation(&"default")
 	var dirs := ["down", "right", "up", "left"]
 	for i in dirs.size():
-		var walk := &"walk_" + dirs[i]
-		var idle := &"idle_" + dirs[i]
+		var walk: StringName = StringName("walk_" + dirs[i])
+		var idle: StringName = StringName("idle_" + dirs[i])
 		sf.add_animation(walk)
 		sf.set_animation_loop(walk, true)
 		sf.set_animation_speed(walk, 8.0)

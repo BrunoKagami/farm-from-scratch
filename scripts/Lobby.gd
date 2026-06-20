@@ -13,11 +13,16 @@ func _ready() -> void:
 	nm.connection_failed.connect(_on_failed)
 	nm.player_connected.connect(_on_player_connected)
 
+var _hosting := false
+
 func _on_host() -> void:
+	if _hosting:
+		_start_game()
+		return
 	get_node("/root/NetworkManager").host()
+	_hosting = true
 	var tunnel_hint := "\nTúnel: cloudflared tunnel --url http://localhost:7777"
 	status_label.text = "Hospedando na porta 7777…\n[Enter] para começar" + tunnel_hint
-	host_btn.disabled = true
 	join_btn.disabled = true
 
 func _on_join() -> void:

@@ -8,7 +8,6 @@ func _ready() -> void:
 func _build_ui() -> void:
 	var vbox := $VBox
 
-	# Vender colheitas
 	for crop in GameData.SELL_PRICES:
 		var price: int = GameData.SELL_PRICES[crop]
 		var btn := Button.new()
@@ -16,7 +15,6 @@ func _build_ui() -> void:
 		btn.pressed.connect(_sell.bind(crop, price))
 		vbox.add_child(btn)
 
-	# Comprar sementes
 	for seed in GameData.SEED_COSTS:
 		var cost: int = GameData.SEED_COSTS[seed]
 		var btn := Button.new()
@@ -30,25 +28,25 @@ func _build_ui() -> void:
 	vbox.add_child(close)
 
 func _sell(crop: String, price: int) -> void:
-	if not Inventory.remove(crop):
+	var qty: int = Inventory.count(crop)
+	if qty <= 0:
 		_show("Sem %s no inventário." % crop)
 		return
+	Inventory.remove(crop)
 	GameManager.add_money(price)
-	_show("Vendido! +$%d" % price)
+	_show("Vendido %s! +$%d" % [crop, price])
 	_refresh_hud()
 
 func _buy_seed(seed: String, cost: int) -> void:
 	if not GameManager.spend_money(cost):
 		_show("Dinheiro insuficiente.")
 		return
-	# Converte "lumifruit_seed" → "lumifruit" para consistência com CROPS
-	var crop := seed.replace("_seed", "")
 	Inventory.add(seed)
 	_show("Comprado: %s" % seed)
 	_refresh_hud()
 
 func _show(text: String) -> void:
-	if msg_label:
+	if is_instance_valid(msg_label):
 		msg_label.text = text
 
 func _refresh_hud() -> void:

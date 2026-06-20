@@ -61,6 +61,7 @@ func _spawn_remote_player(peer_id: int) -> void:
 	node.set_script(_remote_scene)
 	node.name = "RemotePlayer_%d" % peer_id
 	node.position = Vector2(288, 280)
+	node.set("peer_id", peer_id)
 	add_child(node)
 	remote_players[peer_id] = node
 
@@ -129,8 +130,7 @@ func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
 		rpc_id(requester_id, "_credit_harvest", crop, price)
 
 @rpc("authority", "reliable")
-func _credit_harvest(crop: String, price: int) -> void:
-	GameManager.add_money(price)
+func _credit_harvest(crop: String, _price: int) -> void:
 	Inventory.add(crop)
 	var hud := get_node_or_null("/root/World/HUD")
 	if hud and hud.has_method("refresh_inv"):
