@@ -39,7 +39,7 @@ func _process(delta: float) -> void:
 func _receive_time(server_time: float) -> void:
 	if multiplayer.is_server():
 		return
-	var diff := abs(_angular_diff(time_of_day, server_time))
+	var diff: float = abs(_angular_diff(time_of_day, server_time))
 	if diff >= SMOOTH_THRESHOLD:
 		# Drift grande: snap imediato
 		time_of_day = server_time
