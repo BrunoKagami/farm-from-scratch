@@ -1,7 +1,10 @@
 extends Control
 
 func _ready() -> void:
-	if not DisplayServer.is_touchscreen_available() and not OS.has_feature("mobile"):
+	var show_controls := DisplayServer.is_touchscreen_available() \
+		or OS.has_feature("mobile") \
+		or OS.has_feature("web")
+	if not show_controls:
 		hide()
 		set_process_input(false)
 		return
