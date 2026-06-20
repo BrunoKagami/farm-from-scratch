@@ -13,17 +13,13 @@ func _ready() -> void:
 	nm.connection_failed.connect(_on_failed)
 	nm.player_connected.connect(_on_player_connected)
 
-var _hosting := false
-
 func _on_host() -> void:
-	if _hosting:
-		_start_game()
-		return
 	get_node("/root/NetworkManager").host()
-	_hosting = true
 	var tunnel_hint := "\nTúnel: cloudflared tunnel --url http://localhost:7777"
-	status_label.text = "Hospedando na porta 7777…\n[Enter] para começar" + tunnel_hint
+	status_label.text = "Hospedando na porta 7777…" + tunnel_hint
 	join_btn.disabled = true
+	host_btn.disabled = true
+	_start_game()
 
 func _on_join() -> void:
 	var addr := ip_input.text.strip_edges()
@@ -46,9 +42,6 @@ func _on_failed() -> void:
 func _on_player_connected(_peer_id: int) -> void:
 	pass
 
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_accept") and not host_btn.disabled:
-		_on_host()
 
 func _start_game() -> void:
 	get_tree().change_scene_to_file("res://scenes/World.tscn")
