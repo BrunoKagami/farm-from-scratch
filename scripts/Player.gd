@@ -58,9 +58,13 @@ func _try_interact() -> void:
 
 	if s == 0:
 		var seed_name: String = selected_crop + "_seed"
+		var seed_count: int = Inventory.count(seed_name)
+		print("[Player] tentando plantar seed=", seed_name, " qty=", seed_count, " items=", Inventory.items)
 		if not Inventory.remove(seed_name):
 			_hud_msg("Sem semente de %s!" % selected_crop)
+			print("[Player] sem semente!")
 			return
+		print("[Player] semente removida, plantando...")
 		var hud := get_node_or_null("/root/World/HUD")
 		if hud and hud.has_method("refresh_inv"):
 			hud.refresh_inv()

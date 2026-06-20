@@ -12,6 +12,9 @@ func _ready() -> void:
 	if nm:
 		nm.player_connected.connect(_on_player_connected)
 		nm.player_disconnected.connect(_on_player_disconnected)
+		# Spawna jogadores que já conectaram antes do World carregar
+		for peer_id in nm.players.keys():
+			_on_player_connected(peer_id)
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
@@ -84,12 +87,16 @@ func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
 @rpc("any_peer", "reliable")
 func server_plant(grid_pos: Vector2i, crop: String, _requester_id: int) -> void:
 	if not multiplayer.is_server():
+		print("[WorldGrid] server_plant ignorado (não é server)")
 		return
 	if not tile_data.has(grid_pos):
+		print("[WorldGrid] server_plant: tile não existe ", grid_pos)
 		return
 	var td: Dictionary = tile_data[grid_pos]
 	if td["state"] != 0:
+		print("[WorldGrid] server_plant: tile já ocupado state=", td["state"])
 		return
+	print("[WorldGrid] plantando ", crop, " em ", grid_pos)
 	td["state"] = 1
 	td["crop"] = crop
 	td["timer"] = 0.0
