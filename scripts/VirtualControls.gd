@@ -68,10 +68,10 @@ func _handle_touch_event(idx: int, pos: Vector2, pressed: bool) -> void:
 			_joy_offset = Vector2.ZERO
 		elif _btn_e_touch < 0 and pos.distance_to(BTN_E_POS) <= BTN_RADIUS + 12:
 			_btn_e_touch = idx
-			Input.action_press("interact")
+			_fire_action("interact", true)
 		elif _btn_tab_touch < 0 and pos.distance_to(BTN_TAB_POS) <= BTN_RADIUS + 12:
 			_btn_tab_touch = idx
-			Input.action_press("next_crop")
+			_fire_action("next_crop", true)
 	else:
 		if idx == _joy_touch:
 			_joy_touch  = -1
@@ -79,10 +79,16 @@ func _handle_touch_event(idx: int, pos: Vector2, pressed: bool) -> void:
 			_release_directions()
 		if idx == _btn_e_touch:
 			_btn_e_touch = -1
-			Input.action_release("interact")
+			_fire_action("interact", false)
 		if idx == _btn_tab_touch:
 			_btn_tab_touch = -1
-			Input.action_release("next_crop")
+			_fire_action("next_crop", false)
+
+func _fire_action(action: String, pressed: bool) -> void:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
 
 func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index != _joy_touch:

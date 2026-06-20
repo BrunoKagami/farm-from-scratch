@@ -11,16 +11,16 @@ var _target_time := -1.0
 
 # Pontos de cor ao longo do dia (time_of_day 0.0–1.0 = 00:00–24:00)
 const SKY := [
-	[0.000, Color(0.30, 0.30, 0.45)],  # 00:00 meia-noite
-	[0.208, Color(0.28, 0.28, 0.42)],  # 05:00 pré-amanhecer
-	[0.250, Color(0.75, 0.60, 0.50)],  # 06:00 amanhecer suave
+	[0.000, Color(0.45, 0.45, 0.58)],  # 00:00 meia-noite
+	[0.208, Color(0.42, 0.42, 0.55)],  # 05:00 pré-amanhecer
+	[0.250, Color(0.80, 0.68, 0.58)],  # 06:00 amanhecer suave
 	[0.292, Color(1.00, 0.92, 0.80)],  # 07:00 manhã dourada
 	[0.333, Color(1.00, 1.00, 1.00)],  # 08:00 dia pleno
 	[0.750, Color(1.00, 0.97, 0.90)],  # 18:00 tarde quente
-	[0.792, Color(0.85, 0.60, 0.40)],  # 19:00 pôr do sol suave
-	[0.833, Color(0.50, 0.35, 0.55)],  # 20:00 crepúsculo
-	[0.875, Color(0.30, 0.30, 0.45)],  # 21:00 noite
-	[1.000, Color(0.30, 0.30, 0.45)],  # 24:00 meia-noite
+	[0.792, Color(0.85, 0.65, 0.45)],  # 19:00 pôr do sol suave
+	[0.833, Color(0.58, 0.45, 0.62)],  # 20:00 crepúsculo
+	[0.875, Color(0.45, 0.45, 0.58)],  # 21:00 noite
+	[1.000, Color(0.45, 0.45, 0.58)],  # 24:00 meia-noite
 ]
 
 func _process(delta: float) -> void:
