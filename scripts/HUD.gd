@@ -1,16 +1,20 @@
 extends CanvasLayer
 
-@onready var money_label: Label = $MoneyLabel
-@onready var inv_label: Label   = $InvLabel
-@onready var crop_label: Label  = $CropLabel
-@onready var clock_label: Label = $ClockLabel
-@onready var msg_label: Label   = $MsgLabel
+@onready var money_label: Label  = $MoneyLabel
+@onready var inv_label: Label    = $InvLabel
+@onready var crop_label: Label   = $CropLabel
+@onready var clock_label: Label  = $ClockLabel
+@onready var msg_label: Label    = $MsgLabel
+@onready var tunnel_label: Label = $TunnelLabel
 
 func _ready() -> void:
 	GameManager.money_changed.connect(_on_money_changed)
 	_on_money_changed(GameManager.money)
 	refresh_inv()
 	refresh_crop("lumifruit")
+	tunnel_label.visible = multiplayer.is_server()
+	if multiplayer.is_server():
+		tunnel_label.text = "Host  porta 7777  |  cloudflared tunnel --url http://localhost:7777"
 
 func _on_money_changed(amount: int) -> void:
 	money_label.text = "$ %d" % amount
