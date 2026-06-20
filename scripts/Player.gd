@@ -30,6 +30,7 @@ func _input(event: InputEvent) -> void:
 		_cycle_crop()
 
 func _try_interact() -> void:
+	print("[Player] interact pos=", global_position, " grid=", Vector2i(int(global_position.x/GameData.TILE_SIZE), int(global_position.y/GameData.TILE_SIZE)))
 	if _near_shop():
 		_open_shop()
 		return
@@ -41,13 +42,16 @@ func _try_interact() -> void:
 	var world_grid := get_node_or_null("/root/World")
 	if world_grid == null:
 		_hud_msg("ERRO: World nao encontrado")
+		print("[Player] ERRO: World nao encontrado")
 		return
 	var tile: Node2D = world_grid.get_tile(grid_pos)
 	if tile == null:
 		_hud_msg("Fora da roca  pos:%s" % str(grid_pos))
+		print("[Player] Fora da roca pos=", grid_pos)
 		return
 
 	var s: int = tile.get("state")
+	print("[Player] tile encontrado state=", s, " money=", GameManager.money)
 	var my_id := multiplayer.get_unique_id()
 	var call_direct := multiplayer.multiplayer_peer is OfflineMultiplayerPeer \
 					   or multiplayer.is_server()

@@ -8,7 +8,6 @@ var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
 func _ready() -> void:
 	_build_grid()
-	_setup_input_map()
 	var nm := get_node_or_null("/root/NetworkManager")
 	if nm:
 		nm.player_connected.connect(_on_player_connected)
@@ -29,17 +28,6 @@ func _build_grid() -> void:
 
 func get_tile(grid_pos: Vector2i) -> Node2D:
 	return tiles.get(grid_pos, null)
-
-func _setup_input_map() -> void:
-	_add_action_key("interact", KEY_E)
-	_add_action_key("next_crop", KEY_TAB)
-
-func _add_action_key(action: String, key: Key) -> void:
-	if not InputMap.has_action(action):
-		InputMap.add_action(action)
-		var ev := InputEventKey.new()
-		ev.keycode = key
-		InputMap.action_add_event(action, ev)
 
 # --- Remote players ---
 
