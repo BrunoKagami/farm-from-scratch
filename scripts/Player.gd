@@ -47,18 +47,19 @@ func _try_interact() -> void:
 
 	var s: int = tile.get("state")
 	var my_id := multiplayer.get_unique_id()
-	var offline := multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	var call_direct := multiplayer.multiplayer_peer is OfflineMultiplayerPeer \
+	                   or multiplayer.is_server()
 
 	if s == 0:  # EMPTY — plantar
-		var cost: int = GameData.CROPS[selected_crop]["seed_cost"]
-		if not GameManager.spend_money(cost):
+		if not GameManager.spend_money(GameData.CROPS[selected_crop]["seed_cost"]):
 			return
-		if offline:
+		if call_direct:
 			world_grid.server_plant(grid_pos, selected_crop, my_id)
 		else:
 			world_grid.rpc_id(1, "server_plant", grid_pos, selected_crop, my_id)
+
 	elif s == 2:  # READY — colher
-		if offline:
+		if call_direct:
 			world_grid.server_harvest(grid_pos, my_id)
 		else:
 			world_grid.rpc_id(1, "server_harvest", grid_pos, my_id)

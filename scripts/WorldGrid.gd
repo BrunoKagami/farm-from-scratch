@@ -3,11 +3,15 @@ extends Node2D
 var tile_scene := preload("res://scenes/FarmTile.tscn")
 var tiles: Dictionary = {}
 var tile_data: Dictionary = {}
-var player_positions: Dictionary = {}
+var remote_players: Dictionary = {}  # peer_id -> ColorRect node
 
 func _ready() -> void:
 	_build_grid()
 	_setup_input_map()
+	var nm := get_node_or_null("/root/NetworkManager")
+	if nm:
+		nm.player_connected.connect(_on_player_connected)
+		nm.player_disconnected.connect(_on_player_disconnected)
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
@@ -36,6 +40,35 @@ func _add_action_key(action: String, key: Key) -> void:
 		ev.keycode = key
 		InputMap.action_add_event(action, ev)
 
+# --- Remote player visuals ---
+
+func _on_player_connected(peer_id: int) -> void:
+	var my_id := multiplayer.get_unique_id()
+	if peer_id == my_id:
+		return
+	_spawn_remote_player(peer_id)
+
+func _on_player_disconnected(peer_id: int) -> void:
+	if remote_players.has(peer_id):
+		remote_players[peer_id].queue_free()
+		remote_players.erase(peer_id)
+
+func _spawn_remote_player(peer_id: int) -> void:
+	if remote_players.has(peer_id):
+		return
+	var node := ColorRect.new()
+	node.size = Vector2(14, 28)
+	node.position = Vector2(288, 280)
+	# Cor diferente por peer para identificar
+	var rng := RandomNumberGenerator.new()
+	rng.seed = peer_id
+	node.color = Color(rng.randf(), rng.randf_range(0.3, 0.7), rng.randf(), 1.0)
+	node.name = "RemotePlayer_%d" % peer_id
+	add_child(node)
+	remote_players[peer_id] = node
+
+# --- Tile growth ---
+
 func _process(delta: float) -> void:
 	if not multiplayer.is_server():
 		return
@@ -47,20 +80,22 @@ func _process(delta: float) -> void:
 				td["state"] = 2
 				_broadcast_tile(pos)
 
+# --- Player position sync ---
+
 func send_player_state(pos: Vector2, vel: Vector2) -> void:
 	var my_id := multiplayer.get_unique_id()
-	if multiplayer.is_server():
-		player_positions[my_id] = pos
 	if not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc("_sync_player", my_id, pos, vel)
 
 @rpc("any_peer", "unreliable")
 func _sync_player(peer_id: int, pos: Vector2, _vel: Vector2) -> void:
-	player_positions[peer_id] = pos
+	if remote_players.has(peer_id):
+		remote_players[peer_id].position = pos - Vector2(7, 14)
 
-# Chamado pelo Player (local ou via RPC do cliente para o host)
+# --- Plant / Harvest (chamados direto pelo host ou via RPC pelo cliente) ---
+
 @rpc("any_peer", "reliable")
-func server_plant(grid_pos: Vector2i, crop: String, requester_id: int) -> void:
+func server_plant(grid_pos: Vector2i, crop: String, _requester_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	if not tile_data.has(grid_pos):
@@ -68,8 +103,6 @@ func server_plant(grid_pos: Vector2i, crop: String, requester_id: int) -> void:
 	var td: Dictionary = tile_data[grid_pos]
 	if td["state"] != 0:
 		return
-	# Cliente já deduziu localmente antes de enviar o request
-	# Em modo online o host envia confirmação; offline não precisa
 	td["state"] = 1
 	td["crop"] = crop
 	td["timer"] = 0.0
@@ -87,23 +120,16 @@ func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
 		return
 	var crop: String = td["crop"]
 	var price: int = GameData.CROPS[crop]["sell_price"]
-	if multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		GameManager.add_money(price)
-		Inventory.add(crop)
-		var hud := get_node_or_null("/root/World/HUD")
-		if hud and hud.has_method("refresh_inv"):
-			hud.refresh_inv()
-	else:
-		rpc_id(requester_id, "_credit_harvest", crop, price)
 	td["state"] = 0
 	td["crop"] = ""
 	td["timer"] = 0.0
 	td["duration"] = 0.0
 	_broadcast_tile(grid_pos)
-
-@rpc("authority", "reliable")
-func _deduct_cost(cost: int) -> void:
-	GameManager.spend_money(cost)
+	# Creditar no peer que colheu
+	if requester_id == multiplayer.get_unique_id():
+		_credit_harvest(crop, price)
+	else:
+		rpc_id(requester_id, "_credit_harvest", crop, price)
 
 @rpc("authority", "reliable")
 func _credit_harvest(crop: String, price: int) -> void:
@@ -117,6 +143,8 @@ func _broadcast_tile(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
 	rpc("_apply_tile", grid_pos, td["state"], td["crop"],
 	    td["timer"] / max(td["duration"], 1.0))
+	_apply_tile(grid_pos, td["state"], td["crop"],
+	            td["timer"] / max(td["duration"], 1.0))
 
 @rpc("authority", "reliable")
 func _apply_tile(grid_pos: Vector2i, state: int, crop: String, progress: float) -> void:
