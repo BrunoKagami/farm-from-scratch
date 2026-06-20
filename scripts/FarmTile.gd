@@ -1,4 +1,5 @@
 extends Node2D
+class_name FarmTile
 
 enum State { EMPTY, PLANTED, READY }
 

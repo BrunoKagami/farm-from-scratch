@@ -1,13 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://lobby001"]
+[gd_scene format=3 uid="uid://lobby001"]
 
-[ext_resource type="Script" path="res://scripts/Lobby.gd" id="1_lobby"]
+[ext_resource type="Script" uid="uid://cqp6qjy7mo06u" path="res://scripts/Lobby.gd" id="1_lobby"]
 
-[node name="Lobby" type="Control"]
+[node name="Lobby" type="Control" unique_id=1924164006]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1_lobby")
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=828102526]
+layout_mode = 0
 anchor_left = 0.3
 anchor_top = 0.2
 anchor_right = 0.7
@@ -15,20 +18,25 @@ anchor_bottom = 0.8
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Title" type="Label" parent="VBox"]
+[node name="Title" type="Label" parent="VBox" unique_id=342275159]
+layout_mode = 2
 text = "Farm From Scratch"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="VBox"]
+[node name="StatusLabel" type="Label" parent="VBox" unique_id=448896994]
+layout_mode = 2
 text = "Bem-vindo! Hospede ou entre numa partida."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="IPInput" type="LineEdit" parent="VBox"]
+[node name="IPInput" type="LineEdit" parent="VBox" unique_id=639399371]
+layout_mode = 2
 placeholder_text = "IP ou URL do tunel (vazio = localhost)"
 
-[node name="HostBtn" type="Button" parent="VBox"]
+[node name="HostBtn" type="Button" parent="VBox" unique_id=1774109511]
+layout_mode = 2
 text = "Hospedar"
 
-[node name="JoinBtn" type="Button" parent="VBox"]
+[node name="JoinBtn" type="Button" parent="VBox" unique_id=1970115579]
+layout_mode = 2
 text = "Entrar"
