@@ -3,7 +3,8 @@ extends Node2D
 var tile_scene := preload("res://scenes/FarmTile.tscn")
 var tiles: Dictionary = {}
 var tile_data: Dictionary = {}
-var remote_players: Dictionary = {}  # peer_id -> ColorRect node
+var remote_players: Dictionary = {}  # peer_id -> PlayerRemote node
+var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
 func _ready() -> void:
 	_build_grid()
@@ -56,14 +57,10 @@ func _on_player_disconnected(peer_id: int) -> void:
 func _spawn_remote_player(peer_id: int) -> void:
 	if remote_players.has(peer_id):
 		return
-	var node := ColorRect.new()
-	node.size = Vector2(14, 28)
-	node.position = Vector2(288, 280)
-	# Cor diferente por peer para identificar
-	var rng := RandomNumberGenerator.new()
-	rng.seed = peer_id
-	node.color = Color(rng.randf(), rng.randf_range(0.3, 0.7), rng.randf(), 1.0)
+	var node: Node2D = Node2D.new()
+	node.set_script(_remote_scene)
 	node.name = "RemotePlayer_%d" % peer_id
+	node.position = Vector2(288, 280)
 	add_child(node)
 	remote_players[peer_id] = node
 
@@ -88,9 +85,9 @@ func send_player_state(pos: Vector2, vel: Vector2) -> void:
 		rpc("_sync_player", my_id, pos, vel)
 
 @rpc("any_peer", "unreliable")
-func _sync_player(peer_id: int, pos: Vector2, _vel: Vector2) -> void:
+func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
 	if remote_players.has(peer_id):
-		remote_players[peer_id].position = pos - Vector2(7, 14)
+		remote_players[peer_id].update_state(pos, vel)
 
 # --- Plant / Harvest (chamados direto pelo host ou via RPC pelo cliente) ---
 
