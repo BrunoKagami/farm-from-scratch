@@ -75,17 +75,23 @@ func _send_full_state(peer_id: int) -> void:
 # --- Grow timer (only on server) ---
 
 func _process(delta: float) -> void:
-	if not multiplayer.is_server():
-		return
-	for pos in tile_data.keys():
-		var td: Dictionary = tile_data[pos]
-		if td["state"] == 1:
-			td["timer"] += delta
-			if td["timer"] >= td["duration"]:
-				td["state"] = 2
-				_sync_tile_visual(pos)
-				_rpc_tile(pos)
-			else:
+	if multiplayer.is_server():
+		for pos in tile_data.keys():
+			var td: Dictionary = tile_data[pos]
+			if td["state"] == 1:
+				td["timer"] += delta
+				if td["timer"] >= td["duration"]:
+					td["state"] = 2
+					_sync_tile_visual(pos)
+					_rpc_tile(pos)
+				else:
+					_sync_tile_visual(pos)
+	else:
+		# Interpolação visual local — sem autoridade, só para exibir progresso suavemente
+		for pos in tile_data.keys():
+			var td: Dictionary = tile_data[pos]
+			if td["state"] == 1:
+				td["timer"] = min(td["timer"] + delta, td["duration"] - 0.01)
 				_sync_tile_visual(pos)
 
 # --- Player position sync ---
@@ -184,6 +190,8 @@ func _rpc_tile(grid_pos: Vector2i) -> void:
 func _apply_tile_client(grid_pos: Vector2i, state: int, crop: String, progress: float) -> void:
 	if multiplayer.is_server():
 		return
-	tile_data[grid_pos] = { "state": state, "crop": crop, "timer": 0.0, "duration": float(state == 1) * 999.0 }
+	var duration: float = GameData.CROPS[crop]["grow_time"] if crop != "" else 1.0
+	var timer: float = progress * duration
+	tile_data[grid_pos] = { "state": state, "crop": crop, "timer": timer, "duration": duration }
 	if tiles.has(grid_pos):
 		tiles[grid_pos].apply_state(state, crop, progress)
