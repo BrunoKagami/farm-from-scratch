@@ -1,10 +1,7 @@
 extends Control
 
 func _ready() -> void:
-	var show_controls := DisplayServer.is_touchscreen_available() \
-		or OS.has_feature("mobile") \
-		or OS.has_feature("web")
-	if not show_controls:
+	if not DisplayServer.is_touchscreen_available() and not OS.has_feature("mobile"):
 		hide()
 		set_process_input(false)
 		return
@@ -50,40 +47,50 @@ func _draw() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		_handle_touch(event)
+		_handle_touch_event(event.index, event.position, event.pressed)
 		queue_redraw()
 	elif event is InputEventScreenDrag:
 		_handle_drag(event)
 		queue_redraw()
+	# Fallback para browsers mobile que convertem touch em mouse
+	elif event is InputEventMouseButton:
+		var pressed: bool = event.pressed
+		_handle_touch_event(0, event.position, pressed)
+		queue_redraw()
+	elif event is InputEventMouseMotion and _joy_touch == 0:
+		_handle_drag_pos(event.position)
+		queue_redraw()
 
-func _handle_touch(event: InputEventScreenTouch) -> void:
-	var pos: Vector2 = event.position
-	if event.pressed:
+func _handle_touch_event(idx: int, pos: Vector2, pressed: bool) -> void:
+	if pressed:
 		if _joy_touch < 0 and pos.distance_to(JOY_POS) <= JOY_RADIUS + 24:
-			_joy_touch   = event.index
-			_joy_offset  = Vector2.ZERO
+			_joy_touch  = idx
+			_joy_offset = Vector2.ZERO
 		elif _btn_e_touch < 0 and pos.distance_to(BTN_E_POS) <= BTN_RADIUS + 12:
-			_btn_e_touch = event.index
+			_btn_e_touch = idx
 			Input.action_press("interact")
 		elif _btn_tab_touch < 0 and pos.distance_to(BTN_TAB_POS) <= BTN_RADIUS + 12:
-			_btn_tab_touch = event.index
+			_btn_tab_touch = idx
 			Input.action_press("next_crop")
 	else:
-		if event.index == _joy_touch:
+		if idx == _joy_touch:
 			_joy_touch  = -1
 			_joy_offset = Vector2.ZERO
 			_release_directions()
-		elif event.index == _btn_e_touch:
+		if idx == _btn_e_touch:
 			_btn_e_touch = -1
 			Input.action_release("interact")
-		elif event.index == _btn_tab_touch:
+		if idx == _btn_tab_touch:
 			_btn_tab_touch = -1
 			Input.action_release("next_crop")
 
 func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index != _joy_touch:
 		return
-	var delta := event.position - JOY_POS
+	_handle_drag_pos(event.position)
+
+func _handle_drag_pos(pos: Vector2) -> void:
+	var delta := pos - JOY_POS
 	if delta.length() > JOY_RADIUS:
 		delta = delta.normalized() * JOY_RADIUS
 	_joy_offset = delta
