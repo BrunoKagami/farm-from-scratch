@@ -1,6 +1,12 @@
 # Godot cache
 .godot/
 
+# Web export (deployed separately to gh-pages)
+build/
+
+# Cloudflared binary
+cloudflared.exe
+
 # OS
 .DS_Store
 Thumbs.db
