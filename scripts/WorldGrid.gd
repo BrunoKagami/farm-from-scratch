@@ -12,7 +12,6 @@ func _ready() -> void:
 	if nm:
 		nm.player_connected.connect(_on_player_connected)
 		nm.player_disconnected.connect(_on_player_disconnected)
-		# Spawna jogadores que já conectaram antes do World carregar
 		for peer_id in nm.players.keys():
 			_on_player_connected(peer_id)
 
@@ -38,6 +37,9 @@ func _on_player_connected(peer_id: int) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
+	# Fix 3: servidor envia estado atual dos tiles para o novo cliente
+	if multiplayer.is_server():
+		_send_full_state(peer_id)
 
 func _on_player_disconnected(peer_id: int) -> void:
 	if remote_players.has(peer_id):
@@ -54,6 +56,15 @@ func _spawn_remote_player(peer_id: int) -> void:
 	node.set("peer_id", peer_id)
 	add_child(node)
 	remote_players[peer_id] = node
+
+# Fix 3: envia todos os tiles não-vazios para um cliente específico
+func _send_full_state(peer_id: int) -> void:
+	for pos in tile_data.keys():
+		var td: Dictionary = tile_data[pos]
+		if td["state"] == 0:
+			continue
+		var progress: float = float(td["timer"]) / max(float(td["duration"]), 1.0)
+		rpc_id(peer_id, "_apply_tile_client", pos, td["state"], td["crop"], progress)
 
 # --- Grow timer (only on server) ---
 
@@ -77,32 +88,51 @@ func send_player_state(pos: Vector2, vel: Vector2) -> void:
 	if not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc("_sync_player", multiplayer.get_unique_id(), pos, vel)
 
+# Fix 2: valida que o remetente é quem diz ser
 @rpc("any_peer", "unreliable")
 func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	# sender == 0 significa chamada local (host)
+	if sender != 0 and sender != peer_id:
+		return
 	if remote_players.has(peer_id):
 		remote_players[peer_id].update_state(pos, vel)
 
 # --- Plant / Harvest ---
 
 @rpc("any_peer", "reliable")
-func server_plant(grid_pos: Vector2i, crop: String, _requester_id: int) -> void:
+func server_plant(grid_pos: Vector2i, crop: String, requester_id: int) -> void:
 	if not multiplayer.is_server():
-		print("[WorldGrid] server_plant ignorado (não é server)")
 		return
 	if not tile_data.has(grid_pos):
-		print("[WorldGrid] server_plant: tile não existe ", grid_pos)
+		# Fix 1: reembolsa semente se tile inválido
+		_refund_or_call(requester_id, crop + "_seed")
 		return
 	var td: Dictionary = tile_data[grid_pos]
 	if td["state"] != 0:
-		print("[WorldGrid] server_plant: tile já ocupado state=", td["state"])
+		# Fix 1: reembolsa semente se tile já ocupado (race condition)
+		_refund_or_call(requester_id, crop + "_seed")
 		return
-	print("[WorldGrid] plantando ", crop, " em ", grid_pos)
 	td["state"] = 1
 	td["crop"] = crop
 	td["timer"] = 0.0
 	td["duration"] = GameData.CROPS[crop]["grow_time"]
 	_sync_tile_visual(grid_pos)
 	_rpc_tile(grid_pos)
+
+# Fix 1: devolve a semente ao cliente que plantou se o servidor rejeitar
+func _refund_or_call(requester_id: int, seed: String) -> void:
+	if requester_id == multiplayer.get_unique_id():
+		_refund_seed(seed)
+	else:
+		rpc_id(requester_id, "_refund_seed", seed)
+
+@rpc("authority", "reliable")
+func _refund_seed(seed: String) -> void:
+	Inventory.add(seed)
+	var hud := get_node_or_null("/root/World/HUD")
+	if hud and hud.has_method("refresh_inv"):
+		hud.refresh_inv()
 
 @rpc("any_peer", "reliable")
 func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
@@ -133,7 +163,6 @@ func _credit_harvest(crop: String, _price: int) -> void:
 	if hud and hud.has_method("refresh_inv"):
 		hud.refresh_inv()
 
-# Atualiza o visual do tile localmente (host)
 func _sync_tile_visual(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
 	var progress: float = float(td["timer"]) / max(float(td["duration"]), 1.0)
@@ -147,7 +176,6 @@ func _rpc_tile(grid_pos: Vector2i) -> void:
 
 @rpc("authority", "reliable")
 func _apply_tile_client(grid_pos: Vector2i, state: int, crop: String, progress: float) -> void:
-	# Apenas clientes executam — host usa _sync_tile_visual diretamente
 	if multiplayer.is_server():
 		return
 	tile_data[grid_pos] = { "state": state, "crop": crop, "timer": 0.0, "duration": float(state == 1) * 999.0 }
