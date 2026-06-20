@@ -1,34 +1,132 @@
-[gd_scene load_steps=3 format=3 uid="uid://world_main"]
+[gd_scene load_steps=9 format=3 uid="uid://world_main"]
 
 [ext_resource type="Script" path="res://scripts/WorldGrid.gd" id="1_wg"]
 [ext_resource type="Script" path="res://scripts/Player.gd" id="2_pl"]
+[ext_resource type="Script" path="res://scripts/WorldMap.gd" id="3_wm"]
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="4_hud"]
+[ext_resource type="Script" path="res://scripts/VirtualControls.gd" id="5_vc"]
+[ext_resource type="Texture2D" path="res://assets/environment/shop_building.png" id="6_shop"]
+[ext_resource type="Texture2D" path="res://assets/environment/prop_lamp.png" id="7_lamp"]
+[ext_resource type="Texture2D" path="res://assets/environment/prop_sign.png" id="8_sign"]
+
+[sub_resource type="RectangleShape2D" id="shape_player"]
+size = Vector2(14, 14)
+
+[sub_resource type="RectangleShape2D" id="shape_shop"]
+size = Vector2(175, 98)
+
+[sub_resource type="RectangleShape2D" id="shape_lamp"]
+size = Vector2(14, 50)
+
+[sub_resource type="RectangleShape2D" id="shape_sign"]
+size = Vector2(56, 39)
 
 [node name="World" type="Node2D"]
+y_sort_enabled = true
 script = ExtResource("1_wg")
 
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(1, 1, 1, 1)
+
+[node name="WorldMap" type="Node2D" parent="."]
+script = ExtResource("3_wm")
+
+[node name="Shop" type="Sprite2D" parent="."]
+position = Vector2(304, 96)
+texture = ExtResource("6_shop")
+
+[node name="ShopBody" type="StaticBody2D" parent="."]
+position = Vector2(304, 104)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ShopBody"]
+shape = SubResource("shape_shop")
+
+[node name="Lamp" type="Sprite2D" parent="."]
+position = Vector2(162, 224)
+texture = ExtResource("7_lamp")
+
+[node name="LampBody" type="StaticBody2D" parent="."]
+position = Vector2(162, 224)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LampBody"]
+shape = SubResource("shape_lamp")
+
+[node name="Sign" type="Sprite2D" parent="."]
+position = Vector2(401, 147)
+texture = ExtResource("8_sign")
+
+[node name="SignBody" type="StaticBody2D" parent="."]
+position = Vector2(401, 147)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SignBody"]
+shape = SubResource("shape_sign")
+
 [node name="Player" type="CharacterBody2D" parent="."]
-position = Vector2(64, 64)
+position = Vector2(288, 280)
 script = ExtResource("2_pl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+position = Vector2(-13, 0)
+shape = SubResource("shape_player")
 
-[node name="Sprite" type="ColorRect" parent="Player"]
-offset_left = -8.0
-offset_top = -8.0
-offset_right = 8.0
-offset_bottom = 8.0
-color = Color(0.2, 0.6, 1.0, 1.0)
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+position = Vector2(-13, 0)
+texture = null
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
+zoom = Vector2(2, 2)
 
 [node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
 
 [node name="MoneyLabel" type="Label" parent="HUD"]
 anchors_preset = 1
-anchor_right = 0.0
-anchor_bottom = 0.0
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 200.0
-offset_bottom = 30.0
+offset_bottom = 28.0
 text = "$ 100"
+
+[node name="InvLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 28.0
+offset_right = 300.0
+offset_bottom = 48.0
+text = ""
+
+[node name="CropLabel" type="Label" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -28.0
+offset_right = 200.0
+offset_bottom = -8.0
+text = "Cultura: lumifruit"
+
+[node name="ClockLabel" type="Label" parent="HUD"]
+anchors_preset = 1
+offset_left = 200.0
+offset_top = 8.0
+offset_right = 400.0
+offset_bottom = 28.0
+horizontal_alignment = 1
+text = "06:00"
+
+[node name="ShopPanel" type="PanelContainer" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -80.0
+offset_right = 120.0
+offset_bottom = 80.0
+
+[node name="VirtualControls" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("5_vc")

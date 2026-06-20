@@ -1,0 +1,34 @@
+[gd_scene load_steps=2 format=3 uid="uid://lobby001"]
+
+[ext_resource type="Script" path="res://scripts/Lobby.gd" id="1_lobby"]
+
+[node name="Lobby" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_lobby")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+anchor_left = 0.3
+anchor_top = 0.2
+anchor_right = 0.7
+anchor_bottom = 0.8
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="VBox"]
+text = "Farm From Scratch"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="VBox"]
+text = "Bem-vindo! Hospede ou entre numa partida."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="IPInput" type="LineEdit" parent="VBox"]
+placeholder_text = "IP ou URL do tunel (vazio = localhost)"
+
+[node name="HostBtn" type="Button" parent="VBox"]
+text = "Hospedar"
+
+[node name="JoinBtn" type="Button" parent="VBox"]
+text = "Entrar"

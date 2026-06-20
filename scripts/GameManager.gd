@@ -5,7 +5,7 @@ signal money_changed(new_amount: int)
 var money: int = 100
 
 func _ready() -> void:
-	print("Space Farm — GameManager ready")
+	print("Farm From Scratch — GameManager ready")
 
 func add_money(amount: int) -> void:
 	money += amount

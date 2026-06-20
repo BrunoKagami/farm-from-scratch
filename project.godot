@@ -10,10 +10,17 @@ config_version=5
 
 [application]
 
-config/name="Space Farm"
-config/description="Space farming multiplayer game - MVP"
-run/main_scene="res://scenes/World.tscn"
-config/features=PackedStringArray("4.2", "GL Compatibility")
+config/name="Farm From Scratch"
+config/description="MMO de progressão econômica - comece do zero, construa sua vida"
+run/main_scene="res://scenes/Lobby.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+
+[autoload]
+
+GameData="*res://scripts/GameData.gd"
+GameManager="*res://scripts/GameManager.gd"
+Inventory="*res://scripts/Inventory.gd"
+NetworkManager="*res://multiplayer/NetworkManager.gd"
 
 [display]
 
@@ -21,10 +28,6 @@ window/size/viewport_width=640
 window/size/viewport_height=360
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
-
-[autoload]
-
-GameManager="*res://scripts/GameManager.gd"
 
 [rendering]
 
