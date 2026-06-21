@@ -65,6 +65,11 @@ func is_host() -> bool:
 	return multiplayer.is_server()
 
 func _on_peer_connected(peer_id: int) -> void:
+	# O motor sempre dispara este sinal para o peer 1 (host) no lado do
+	# cliente, mesmo quando o host é um servidor dedicado sem avatar.
+	# Quem decide se o host vira avatar visível é o RPC _announce_player.
+	if peer_id == 1 and not multiplayer.is_server():
+		return
 	players[peer_id] = { "id": peer_id }
 	emit_signal("player_connected", peer_id)
 	if multiplayer.is_server():
