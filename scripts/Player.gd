@@ -67,6 +67,15 @@ func _try_interact() -> void:
 		_open_shop()
 		return
 
+	var world_grid_for_tree := get_node_or_null("/root/World")
+	if world_grid_for_tree and world_grid_for_tree.has_method("get_near_tree"):
+		var tree_id: int = world_grid_for_tree.get_near_tree(global_position)
+		if tree_id >= 0:
+			_hud_msg("Cortando árvore...")
+			_play_chop_feedback()
+			world_grid_for_tree.request_chop_tree(tree_id)
+			return
+
 	var grid_pos := Vector2i(
 		int(global_position.x / GameData.TILE_SIZE),
 		int(global_position.y / GameData.TILE_SIZE)
@@ -107,6 +116,15 @@ func _try_interact() -> void:
 			world_grid.server_harvest(grid_pos, my_id)
 		else:
 			world_grid.rpc_id(1, "server_harvest", grid_pos, my_id)
+
+# Placeholder enquanto não existe animação própria de corte: um
+# squash-and-stretch rápido no sprite, só pra dar feedback visual do golpe.
+func _play_chop_feedback() -> void:
+	if _anim == null:
+		return
+	var tw := create_tween()
+	tw.tween_property(_anim, "scale", Vector2(1.2, 0.8), 0.07)
+	tw.tween_property(_anim, "scale", Vector2(1.0, 1.0), 0.12)
 
 func _hud_msg(text: String) -> void:
 	var hud := get_node_or_null("/root/World/HUD")

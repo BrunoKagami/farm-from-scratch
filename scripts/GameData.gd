@@ -14,4 +14,14 @@ const CROPS := {
 }
 
 const SEED_COSTS  := { "lumifruit_seed": 5,  "voidroot_seed": 10, "starbloom_seed": 20 }
-const SELL_PRICES := { "lumifruit": 20, "voidroot": 45, "starbloom": 80 }
+const SELL_PRICES := { "lumifruit": 20, "voidroot": 45, "starbloom": 80, "wood": 8 }
+
+# Árvores: posições fixas no gramado, longe da roça/loja/luminária/placa.
+const TREE_SPAWN_POSITIONS := [
+	Vector2(64, 64),
+	Vector2(560, 64),
+	Vector2(64, 560),
+	Vector2(560, 560),
+]
+const TREE_REGROW_TIME := 30.0
+const WOOD_YIELD := 2

@@ -6,6 +6,10 @@ var tile_data: Dictionary = {}
 var remote_players: Dictionary = {}
 var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
+var trees: Dictionary = {}
+var tree_data: Dictionary = {}
+var _tree_scene := preload("res://scripts/Tree.gd")
+
 # --- Movimentação server-authoritative ---
 # Só populados/usados no servidor. peer_inputs guarda a última direção
 # recebida de cada cliente; remote_bodies guarda o corpo físico que o
@@ -25,6 +29,9 @@ var _economy_resync_timer := 0.0
 
 func _ready() -> void:
 	_build_grid()
+	_build_trees()
+	if multiplayer.is_server():
+		_load_world_state()
 	if DisplayServer.get_name() == "headless":
 		var local_player := get_node_or_null("Player")
 		if local_player: local_player.queue_free()
@@ -72,11 +79,27 @@ func _build_grid() -> void:
 			var pos := Vector2i(x, y)
 			tiles[pos] = tile
 			tile_data[pos] = { "state": 0, "crop": "", "timer": 0.0, "duration": 0.0 }
-	if multiplayer.is_server():
-		_load_world_state()
 
 func get_tile(grid_pos: Vector2i) -> Node2D:
 	return tiles.get(grid_pos, null)
+
+func _build_trees() -> void:
+	for i in GameData.TREE_SPAWN_POSITIONS.size():
+		var tree := Node2D.new()
+		tree.set_script(_tree_scene)
+		tree.position = GameData.TREE_SPAWN_POSITIONS[i]
+		tree.name = "Tree_%d" % i
+		add_child(tree)
+		trees[i] = tree
+		tree_data[i] = { "chopped": false, "timer": 0.0 }
+
+func get_near_tree(global_pos: Vector2) -> int:
+	for tree_id in trees.keys():
+		if tree_data[tree_id]["chopped"]:
+			continue
+		if global_pos.distance_to(trees[tree_id].global_position) < 28.0:
+			return tree_id
+	return -1
 
 # --- Remote players ---
 
@@ -153,6 +176,9 @@ func _send_full_state(peer_id: int) -> void:
 			continue
 		var progress: float = float(td["timer"]) / max(float(td["duration"]), 1.0)
 		rpc_id(peer_id, "_apply_tile_client", pos, td["state"], td["crop"], progress)
+	for tree_id in tree_data.keys():
+		if tree_data[tree_id]["chopped"]:
+			rpc_id(peer_id, "_apply_tree_client", tree_id, true)
 
 # --- Grow timer (only on server) ---
 
@@ -168,6 +194,15 @@ func _process(delta: float) -> void:
 					_rpc_tile(pos)
 				else:
 					_sync_tile_visual(pos)
+		for tree_id in tree_data.keys():
+			var trd: Dictionary = tree_data[tree_id]
+			if trd["chopped"]:
+				trd["timer"] += delta
+				if trd["timer"] >= GameData.TREE_REGROW_TIME:
+					trd["chopped"] = false
+					trd["timer"] = 0.0
+					_sync_tree_visual(tree_id)
+					_rpc_tree(tree_id)
 		# Resync periódico: garante que dinheiro/inventário do cliente nunca
 		# fiquem divergentes para sempre por um RPC perdido — de tempo em
 		# tempo o servidor reafirma a verdade pra todo mundo, igual já
@@ -363,6 +398,13 @@ func _load_world_state() -> void:
 			"duration": float(entry.get("duration", 0.0)),
 		}
 		_sync_tile_visual(pos)
+	var tree_arr: Array = saved.get("trees", [])
+	for entry in tree_arr:
+		var tree_id: int = int(entry.get("id", -1))
+		if not tree_data.has(tree_id):
+			continue
+		tree_data[tree_id] = { "chopped": true, "timer": float(entry.get("timer", 0.0)) }
+		_sync_tree_visual(tree_id)
 
 func _save_world_state() -> void:
 	var arr: Array = []
@@ -375,7 +417,12 @@ func _save_world_state() -> void:
 			"state": td["state"], "crop": td["crop"],
 			"timer": td["timer"], "duration": td["duration"],
 		})
-	SaveManager.save_world({ "tiles": arr })
+	var tree_arr: Array = []
+	for tree_id in tree_data.keys():
+		var trd: Dictionary = tree_data[tree_id]
+		if trd["chopped"]:
+			tree_arr.append({ "id": tree_id, "timer": trd["timer"] })
+	SaveManager.save_world({ "tiles": arr, "trees": tree_arr })
 
 # Salva tudo antes do servidor encerrar (fechar a janela / Ctrl+C),
 # pra não perder progresso entre o último resync periódico e a queda.
@@ -499,6 +546,46 @@ func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
 		return
 	st["inventory"][crop] = st["inventory"].get(crop, 0) + 1
 	_push_economy_state(requester_id)
+
+# --- Árvores ---
+
+func request_chop_tree(tree_id: int) -> void:
+	var my_id := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_server_chop_tree(tree_id, my_id)
+	else:
+		rpc_id(1, "_server_chop_tree", tree_id, my_id)
+
+@rpc("any_peer", "reliable")
+func _server_chop_tree(tree_id: int, requester_id: int) -> void:
+	if not multiplayer.is_server() or not _valid_sender(requester_id):
+		return
+	if not tree_data.has(tree_id) or tree_data[tree_id]["chopped"]:
+		return
+	tree_data[tree_id]["chopped"] = true
+	tree_data[tree_id]["timer"] = 0.0
+	_sync_tree_visual(tree_id)
+	_rpc_tree(tree_id)
+	var st: Dictionary = player_state.get(requester_id, {})
+	if st.is_empty():
+		return
+	st["inventory"]["wood"] = st["inventory"].get("wood", 0) + GameData.WOOD_YIELD
+	_push_economy_state(requester_id)
+
+func _sync_tree_visual(tree_id: int) -> void:
+	if trees.has(tree_id):
+		trees[tree_id].apply_state(tree_data[tree_id]["chopped"])
+
+func _rpc_tree(tree_id: int) -> void:
+	rpc("_apply_tree_client", tree_id, tree_data[tree_id]["chopped"])
+
+@rpc("authority", "reliable")
+func _apply_tree_client(tree_id: int, chopped: bool) -> void:
+	if multiplayer.is_server():
+		return
+	if tree_data.has(tree_id):
+		tree_data[tree_id]["chopped"] = chopped
+		_sync_tree_visual(tree_id)
 
 func _sync_tile_visual(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]
