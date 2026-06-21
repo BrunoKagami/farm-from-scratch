@@ -5,6 +5,9 @@ var _anim: AnimatedSprite2D
 var peer_id: int = 0
 
 const LERP_SPEED := 12.0
+# Acima disso é lag real (spike de rede, pacote perdido), não resíduo normal
+# de suavização — aí vale a pena teleportar em vez de "deslizar" visivelmente.
+const SNAP_THRESHOLD := 32.0
 var _target_pos: Vector2 = Vector2.INF
 
 func _process(delta: float) -> void:
@@ -49,10 +52,11 @@ func _build_frames() -> SpriteFrames:
 	return sf
 
 func update_state(pos: Vector2, vel: Vector2) -> void:
-	# Primeira vez vendo esse jogador, ou ele parado: nada a suavizar —
-	# o lerp nunca chega exatamente no alvo, só vai diminuindo a distância
-	# pra sempre, o que deixava um resíduo de alguns pixels mesmo já parado.
-	if _target_pos == Vector2.INF or vel == Vector2.ZERO:
+	# Primeira vez vendo esse jogador, ou um salto grande demais pra ser
+	# resíduo normal de rede (lag spike real): teleporta. Qualquer outra
+	# divergência continua suavizada pelo lerp em _process, mesmo que demore
+	# um pouco mais pra fechar — melhor que um salto visível.
+	if _target_pos == Vector2.INF or position.distance_to(pos) > SNAP_THRESHOLD:
 		position = pos
 	_target_pos = pos
 	if _anim == null:
