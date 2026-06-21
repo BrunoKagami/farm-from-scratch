@@ -7,6 +7,7 @@ echo ========================================
 echo.
 
 set SCRIPT_DIR=%~dp0
+set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 set GODOT_EXE=C:\Users\bruno\Documents\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64.exe
 
 if not exist "%GODOT_EXE%" (
