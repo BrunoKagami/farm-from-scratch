@@ -7,7 +7,7 @@ echo ========================================
 echo.
 
 set SCRIPT_DIR=%~dp0
-set GODOT_EXE=C:\Users\bruno\Documents\Godot_v4.6.3-stable_win64.exe
+set GODOT_EXE=C:\Users\bruno\Documents\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64.exe
 
 if not exist "%GODOT_EXE%" (
     echo ERRO: Nao encontrei o Godot em "%GODOT_EXE%".
