@@ -38,8 +38,14 @@ func _physics_process(_delta: float) -> void:
 
 # Chamado pelo servidor (via WorldGrid) quando a posição autoritativa diverge
 # da nossa previsão local.
-func server_correct(server_pos: Vector2, _server_vel: Vector2) -> void:
+func server_correct(server_pos: Vector2, server_vel: Vector2) -> void:
 	if multiplayer.is_server():
+		return
+	# Parado: nada a suavizar, e fica errado pra sempre se o resíduo for menor
+	# que RECONCILE_THRESHOLD (o lerp nunca chega exatamente no alvo enquanto
+	# em movimento, mas aqui não há mais movimento pra desculpar a diferença).
+	if server_vel == Vector2.ZERO:
+		global_position = server_pos
 		return
 	if global_position.distance_to(server_pos) > RECONCILE_THRESHOLD:
 		global_position = global_position.lerp(server_pos, RECONCILE_LERP)
