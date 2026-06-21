@@ -49,7 +49,10 @@ func _build_frames() -> SpriteFrames:
 	return sf
 
 func update_state(pos: Vector2, vel: Vector2) -> void:
-	if _target_pos == Vector2.INF:
+	# Primeira vez vendo esse jogador, ou ele parado: nada a suavizar —
+	# o lerp nunca chega exatamente no alvo, só vai diminuindo a distância
+	# pra sempre, o que deixava um resíduo de alguns pixels mesmo já parado.
+	if _target_pos == Vector2.INF or vel == Vector2.ZERO:
 		position = pos
 	_target_pos = pos
 	if _anim == null:
