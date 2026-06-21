@@ -22,13 +22,6 @@ func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 1
 
-	var shadow := Node2D.new()
-	shadow.set_script(load("res://scripts/Shadow.gd"))
-	shadow.width = 14.0
-	shadow.height = 7.0
-	shadow.position = Vector2(0, 13)
-	add_child(shadow)
-
 func _physics_process(_delta: float) -> void:
 	var direction := Vector2(
 		Input.get_axis("ui_left", "ui_right"),

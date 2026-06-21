@@ -1,6 +1,6 @@
 extends Node2D
 
-var _anim: AnimatedSprite2D
+@onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
 var peer_id: int = 0
 
@@ -16,7 +16,6 @@ func _process(delta: float) -> void:
 	position = position.lerp(_target_pos, clamp(LERP_SPEED * delta, 0.0, 1.0))
 
 func _ready() -> void:
-	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = _build_frames()
 	_anim.animation = &"idle_down"
 	_anim.play()
@@ -24,14 +23,6 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = peer_id
 	_anim.modulate = Color.from_hsv(rng.randf(), 0.7, 1.0)
-	add_child(_anim)
-
-	var shadow := Node2D.new()
-	shadow.set_script(load("res://scripts/Shadow.gd"))
-	shadow.width = 14.0
-	shadow.height = 7.0
-	shadow.position = Vector2(0, 13)
-	add_child(shadow)
 
 func _build_frames() -> SpriteFrames:
 	var tex: Texture2D = load("res://assets/characters/personagem_Base-Sheet.png")

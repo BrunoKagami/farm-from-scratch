@@ -1,40 +1,12 @@
 extends Node2D
 
-var _anim: AnimatedSprite2D
+@onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 var chopped := false
 
-# Distância entre o centro do frame (64x64, ponto de origem padrão do
-# AnimatedSprite2D) e a base do tronco (pixel mais baixo da árvore = 63,
-# centro = 32). O nó em si fica posicionado NA BASE (ver WorldGrid
-# ._build_trees) — isso aqui só compensa visual/colisão para que nada
-# se mova na tela, mantendo o Y-sort correto (a base é o ponto certo
-# pra decidir quem desenha na frente, não o centro da copa).
-const _BASE_OFFSET := 31.0
-
 func _ready() -> void:
-	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = _build_frames()
 	_anim.animation = &"sway"
-	_anim.offset = Vector2(0, -_BASE_OFFSET)
 	_anim.play()
-	add_child(_anim)
-
-	# Só o tronco bloqueia — a copa não tem colisão.
-	var body := StaticBody2D.new()
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(22, 16)
-	shape.shape = rect
-	shape.position = Vector2(0, 20 - _BASE_OFFSET)
-	body.add_child(shape)
-	add_child(body)
-
-	var shadow := Node2D.new()
-	shadow.set_script(load("res://scripts/Shadow.gd"))
-	shadow.width = 24.0
-	shadow.height = 11.0
-	shadow.position = Vector2(0, -2)
-	add_child(shadow)
 
 func _build_frames() -> SpriteFrames:
 	var tex: Texture2D = load("res://assets/environment/Arvore-Sheet.png")

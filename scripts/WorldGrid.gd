@@ -4,11 +4,11 @@ var tile_scene := preload("res://scenes/FarmTile.tscn")
 var tiles: Dictionary = {}
 var tile_data: Dictionary = {}
 var remote_players: Dictionary = {}
-var _remote_scene := preload("res://scripts/PlayerRemote.gd")
+var _remote_scene := preload("res://scenes/PlayerRemote.tscn")
 
 var trees: Dictionary = {}
 var tree_data: Dictionary = {}
-var _tree_scene := preload("res://scripts/Tree.gd")
+var _tree_scene := preload("res://scenes/Tree.tscn")
 
 # --- Movimentação server-authoritative ---
 # Só populados/usados no servidor. peer_inputs guarda a última direção
@@ -30,7 +30,6 @@ var _economy_resync_timer := 0.0
 func _ready() -> void:
 	_build_grid()
 	_build_trees()
-	_build_prop_shadows()
 	if multiplayer.is_server():
 		_load_world_state()
 	if DisplayServer.get_name() == "headless":
@@ -86,8 +85,7 @@ func get_tile(grid_pos: Vector2i) -> Node2D:
 
 func _build_trees() -> void:
 	for i in GameData.TREE_SPAWN_POSITIONS.size():
-		var tree := Node2D.new()
-		tree.set_script(_tree_scene)
+		var tree: Node2D = _tree_scene.instantiate()
 		# Posiciona o nó na base do tronco (não no centro da copa), pra o
 		# Y-sort comparar a árvore com o jogador no ponto certo. Tree.gd
 		# compensa offset/colisão pra nada mudar visualmente na tela.
@@ -104,21 +102,6 @@ func get_near_tree(global_pos: Vector2) -> int:
 		if global_pos.distance_to(trees[tree_id].global_position) < 28.0:
 			return tree_id
 	return -1
-
-# Sombra estática (elipse) embaixo dos cenários fixos — base calculada a
-# partir da posição/tamanho de cada colisão já existente.
-func _build_prop_shadows() -> void:
-	_add_prop_shadow(Vector2(304, 153), 140.0, 24.0)  # Shop
-	_add_prop_shadow(Vector2(162, 249), 18.0, 8.0)    # Lamp
-	_add_prop_shadow(Vector2(401, 166), 42.0, 14.0)   # Sign
-
-func _add_prop_shadow(pos: Vector2, w: float, h: float) -> void:
-	var shadow := Node2D.new()
-	shadow.set_script(load("res://scripts/Shadow.gd"))
-	shadow.width = w
-	shadow.height = h
-	shadow.position = pos
-	add_child(shadow)
 
 # --- Remote players ---
 
@@ -145,8 +128,7 @@ func _on_player_disconnected(peer_id: int) -> void:
 func _spawn_remote_player(peer_id: int) -> void:
 	if remote_players.has(peer_id):
 		return
-	var node: Node2D = Node2D.new()
-	node.set_script(_remote_scene)
+	var node: Node2D = _remote_scene.instantiate()
 	node.name = "RemotePlayer_%d" % peer_id
 	node.position = GameData.PLAYER_SPAWN
 	node.set("peer_id", peer_id)

@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://playerremote001"]
+
+[ext_resource type="Script" path="res://scripts/PlayerRemote.gd" id="1_pr"]
+[ext_resource type="Texture2D" path="res://assets/environment/shadow_blob.png" id="2_shadow"]
+
+[node name="PlayerRemote" type="Node2D"]
+script = ExtResource("1_pr")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(0, 13)
+scale = Vector2(0.4375, 0.4375)
+texture = ExtResource("2_shadow")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

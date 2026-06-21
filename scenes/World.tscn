@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://assets/environment/prop_lamp.png" id="7_lamp"]
 [ext_resource type="Texture2D" path="res://assets/environment/prop_sign.png" id="8_sign"]
 [ext_resource type="Texture2D" path="res://assets/characters/personagem_Base-Sheet.png" id="9_char"]
+[ext_resource type="Texture2D" path="res://assets/environment/shadow_blob.png" id="12_shadow"]
 
 [sub_resource type="AtlasTexture" id="at_d0"]
 atlas = ExtResource("9_char")
@@ -116,6 +117,12 @@ script = ExtResource("3_wm")
 position = Vector2(304, 96)
 texture = ExtResource("6_shop")
 
+[node name="Shadow" type="Sprite2D" parent="Shop"]
+z_index = -1
+position = Vector2(0, 57)
+scale = Vector2(4.375, 1.5)
+texture = ExtResource("12_shadow")
+
 [node name="ShopBody" type="StaticBody2D" parent="."]
 position = Vector2(304, 104)
 
@@ -125,6 +132,12 @@ shape = SubResource("shape_shop")
 [node name="Lamp" type="Sprite2D" parent="."]
 position = Vector2(162, 224)
 texture = ExtResource("7_lamp")
+
+[node name="Shadow" type="Sprite2D" parent="Lamp"]
+z_index = -1
+position = Vector2(0, 25)
+scale = Vector2(0.5625, 0.5)
+texture = ExtResource("12_shadow")
 
 [node name="LampBody" type="StaticBody2D" parent="."]
 position = Vector2(162, 224)
@@ -136,6 +149,12 @@ shape = SubResource("shape_lamp")
 position = Vector2(401, 147)
 texture = ExtResource("8_sign")
 
+[node name="Shadow" type="Sprite2D" parent="Sign"]
+z_index = -1
+position = Vector2(0, 19)
+scale = Vector2(1.3125, 0.875)
+texture = ExtResource("12_shadow")
+
 [node name="SignBody" type="StaticBody2D" parent="."]
 position = Vector2(401, 147)
 
@@ -145,6 +164,11 @@ shape = SubResource("shape_sign")
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(288, 280)
 script = ExtResource("2_pl")
+
+[node name="Shadow" type="Sprite2D" parent="Player"]
+position = Vector2(0, 13)
+scale = Vector2(0.4375, 0.4375)
+texture = ExtResource("12_shadow")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("shape_player")
