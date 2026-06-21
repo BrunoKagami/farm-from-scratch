@@ -11,6 +11,14 @@ var selected_crop: String = "lumifruit"
 var _last_dir := "down"
 var _suppress_correction_until_msec := 0
 
+# Animação de corte: 4 quadros 32x64 (o dobro de alto que os outros, pra
+# caber o machado erguido), então o corpo fica mais baixo dentro do frame
+# do que nas animações normais (32x32). offset compensa isso na hora de
+# tocar, senão o personagem "salta" pra cima enquanto golpeia.
+const CHOP_OFFSET := Vector2(0, -4)
+const CHOP_DURATION := 0.5
+var _chopping_until_msec := 0
+
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
@@ -21,6 +29,21 @@ func _ready() -> void:
 	# cliente (que nunca trata outro jogador como obstáculo).
 	collision_layer = 2
 	collision_mask = 1
+	_add_chop_animation()
+
+func _add_chop_animation() -> void:
+	var sf := _anim.sprite_frames
+	if sf == null or sf.has_animation(&"chop_down"):
+		return
+	var tex: Texture2D = load("res://assets/characters/Movimento_Machado_para_baix.png")
+	sf.add_animation(&"chop_down")
+	sf.set_animation_loop(&"chop_down", false)
+	sf.set_animation_speed(&"chop_down", 8.0)
+	for i in 4:
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2(i * 32, 0, 32, 64)
+		sf.add_frame(&"chop_down", at)
 
 func _physics_process(_delta: float) -> void:
 	var direction := Vector2(
@@ -117,14 +140,13 @@ func _try_interact() -> void:
 		else:
 			world_grid.rpc_id(1, "server_harvest", grid_pos, my_id)
 
-# Placeholder enquanto não existe animação própria de corte: um
-# squash-and-stretch rápido no sprite, só pra dar feedback visual do golpe.
 func _play_chop_feedback() -> void:
 	if _anim == null:
 		return
-	var tw := create_tween()
-	tw.tween_property(_anim, "scale", Vector2(1.2, 0.8), 0.07)
-	tw.tween_property(_anim, "scale", Vector2(1.0, 1.0), 0.12)
+	_anim.offset = CHOP_OFFSET
+	_anim.animation = &"chop_down"
+	_anim.play()
+	_chopping_until_msec = Time.get_ticks_msec() + int(CHOP_DURATION * 1000)
 
 func _hud_msg(text: String) -> void:
 	var hud := get_node_or_null("/root/World/HUD")
@@ -134,6 +156,9 @@ func _hud_msg(text: String) -> void:
 func _update_anim(dir: Vector2) -> void:
 	if _anim == null:
 		return
+	if Time.get_ticks_msec() < _chopping_until_msec:
+		return
+	_anim.offset = Vector2.ZERO
 	if dir == Vector2.ZERO:
 		_anim.play("idle_" + _last_dir)
 		return
