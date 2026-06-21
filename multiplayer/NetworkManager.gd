@@ -38,7 +38,6 @@ var _reconnect_timer := 0.0
 
 func _ready() -> void:
 	is_dedicated = DisplayServer.get_name() == "headless"
-	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
@@ -118,28 +117,8 @@ func disconnect_from_game() -> void:
 	_was_connected = false
 	_reconnecting = false
 
-# Usado quando o servidor recusa a conexão de propósito (ex: nome
-# duplicado) — nesses casos reconectar de novo só repete o mesmo erro.
-func disable_reconnect() -> void:
-	last_address = ""
-	_was_connected = false
-	_reconnecting = false
-
 func is_host() -> bool:
 	return multiplayer.is_server()
-
-func _on_peer_connected(peer_id: int) -> void:
-	# O motor sempre dispara este sinal para o peer 1 (host) no lado do
-	# cliente, mesmo quando o host é um servidor dedicado sem avatar.
-	# Quem decide se o host vira avatar visível é o RPC _announce_player.
-	if peer_id == 1 and not multiplayer.is_server():
-		return
-	players[peer_id] = { "id": peer_id }
-	emit_signal("player_connected", peer_id)
-	if multiplayer.is_server():
-		for existing_id in players.keys():
-			if existing_id != peer_id:
-				rpc_id(peer_id, "_announce_player", existing_id)
 
 @rpc("authority", "reliable")
 func _announce_player(existing_id: int) -> void:
@@ -173,12 +152,21 @@ func _claim_name(requested_name: String) -> void:
 	var peer_id := sender if sender != 0 else multiplayer.get_unique_id()
 	for existing_id in peer_names.keys():
 		if existing_id != peer_id and peer_names[existing_id] == requested_name:
+			# Recusa só por RPC — quem desconecta é o próprio cliente ao
+			# receber _claim_rejected. Se o servidor derrubasse a conexão
+			# aqui, corria o risco de fechar o socket antes da RPC sair.
 			if sender != 0:
 				rpc_id(sender, "_claim_rejected", requested_name)
-				if multiplayer.multiplayer_peer is WebSocketMultiplayerPeer:
-					multiplayer.multiplayer_peer.disconnect_peer(sender)
 			return
 	peer_names[peer_id] = requested_name
+	# Só agora o jogador "existe" pro resto do jogo — antes da aceitação do
+	# nome, ninguém deve ver avatar nenhum aparecer (evita o fantasma de
+	# uma sessão que acaba sendo recusada por nome duplicado).
+	players[peer_id] = { "id": peer_id }
+	emit_signal("player_connected", peer_id)
+	for existing_id in players.keys():
+		if existing_id != peer_id:
+			rpc_id(peer_id, "_announce_player", existing_id)
 	if sender != 0:
 		rpc_id(sender, "_claim_accepted")
 	else:
@@ -191,7 +179,7 @@ func _claim_accepted() -> void:
 @rpc("authority", "reliable")
 func _claim_rejected(requested_name: String) -> void:
 	last_error = "O nome \"%s\" já está em uso em outra sessão." % requested_name
-	disable_reconnect()
+	disconnect_from_game()
 	emit_signal("name_rejected", requested_name)
 
 func _on_connected_to_server() -> void:

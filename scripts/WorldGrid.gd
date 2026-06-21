@@ -289,11 +289,11 @@ func _register_name(player_name: String) -> void:
 	# peers ficam pisando no mesmo save/player_state em paralelo.
 	for existing_id in peer_names.keys():
 		if existing_id != peer_id and peer_names[existing_id] == clean:
+			# Recusa só por RPC — o cliente se desconecta sozinho ao
+			# receber, sem corrida entre o servidor fechar o socket e a
+			# RPC de fato sair.
 			if sender != 0:
 				rpc_id(sender, "_name_rejected", clean)
-				var peer := multiplayer.multiplayer_peer
-				if peer is WebSocketMultiplayerPeer:
-					peer.disconnect_peer(sender)
 			return
 	peer_names[peer_id] = clean
 	var saved := SaveManager.load_player(clean)
@@ -318,8 +318,8 @@ func _name_rejected(player_name: String) -> void:
 		return
 	var nm := get_node_or_null("/root/NetworkManager")
 	if nm:
-		nm.disable_reconnect()
 		nm.last_error = "O nome \"%s\" já está em uso em outra sessão." % player_name
+		nm.disconnect_from_game()
 	get_tree().change_scene_to_file("res://scenes/Lobby.tscn")
 
 func _set_player_position(peer_id: int, pos: Vector2) -> void:
