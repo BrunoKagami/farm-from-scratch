@@ -100,7 +100,7 @@ func _physics_process(_delta: float) -> void:
 		var direction: Vector2 = peer_inputs.get(peer_id, Vector2.ZERO)
 		body.velocity = direction * GameData.PLAYER_SPEED
 		body.move_and_slide()
-		rpc("_apply_authoritative_state", peer_id, body.global_position, body.velocity)
+		rpc("_apply_authoritative_state", peer_id, body.global_position, body.velocity, Engine.get_physics_frames())
 
 @rpc("any_peer", "reliable")
 func request_full_state() -> void:
@@ -147,7 +147,7 @@ func report_movement(direction: Vector2, pos: Vector2, vel: Vector2) -> void:
 	if multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		return
 	if multiplayer.is_server():
-		rpc("_apply_authoritative_state", multiplayer.get_unique_id(), pos, vel)
+		rpc("_apply_authoritative_state", multiplayer.get_unique_id(), pos, vel, Engine.get_physics_frames())
 	else:
 		rpc_id(1, "_receive_input", direction)
 
@@ -160,10 +160,19 @@ func _receive_input(direction: Vector2) -> void:
 		return
 	peer_inputs[sender] = direction.limit_length(1.0)
 
+# Canal "unreliable" não garante ordem de entrega — sem isso, um pacote
+# antigo chegando depois de um mais novo (comum em rede instável/celular)
+# sobrescreveria a posição com dados desatualizados. _last_tick descarta
+# qualquer atualização mais antiga que a última já aplicada por peer.
+var _last_tick: Dictionary = {}
+
 @rpc("authority", "unreliable")
-func _apply_authoritative_state(peer_id: int, pos: Vector2, vel: Vector2) -> void:
+func _apply_authoritative_state(peer_id: int, pos: Vector2, vel: Vector2, tick: int) -> void:
 	if multiplayer.is_server():
 		return
+	if tick <= _last_tick.get(peer_id, -1):
+		return
+	_last_tick[peer_id] = tick
 	if peer_id == multiplayer.get_unique_id():
 		var local_player := get_node_or_null("Player")
 		if local_player and local_player.has_method("server_correct"):
