@@ -14,6 +14,14 @@ var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 var peer_inputs: Dictionary = {}
 var remote_bodies: Dictionary = {}
 
+# --- Economia server-authoritative ---
+# Só populado/usado no servidor: dinheiro e inventário reais de cada
+# jogador. O cliente nunca é dono dessa verdade — Inventory/GameManager
+# locais são só um cache otimista que o servidor corrige quando diverge.
+var player_state: Dictionary = {}
+const ECONOMY_RESYNC_INTERVAL := 10.0
+var _economy_resync_timer := 0.0
+
 func _ready() -> void:
 	_build_grid()
 	if DisplayServer.get_name() == "headless":
@@ -51,6 +59,7 @@ func get_tile(grid_pos: Vector2i) -> Node2D:
 func _on_player_connected(peer_id: int) -> void:
 	if multiplayer.is_server():
 		_spawn_remote_body(peer_id)
+		_init_player_state(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
@@ -63,6 +72,7 @@ func _on_player_disconnected(peer_id: int) -> void:
 		remote_bodies[peer_id].queue_free()
 		remote_bodies.erase(peer_id)
 	peer_inputs.erase(peer_id)
+	player_state.erase(peer_id)
 
 func _spawn_remote_player(peer_id: int) -> void:
 	if remote_players.has(peer_id):
@@ -133,6 +143,15 @@ func _process(delta: float) -> void:
 					_rpc_tile(pos)
 				else:
 					_sync_tile_visual(pos)
+		# Resync periódico: garante que dinheiro/inventário do cliente nunca
+		# fiquem divergentes para sempre por um RPC perdido — de tempo em
+		# tempo o servidor reafirma a verdade pra todo mundo, igual já
+		# fazemos com o horário do dia.
+		_economy_resync_timer += delta
+		if _economy_resync_timer >= ECONOMY_RESYNC_INTERVAL:
+			_economy_resync_timer = 0.0
+			for peer_id in player_state.keys():
+				_push_economy_state(peer_id)
 	else:
 		# Interpolação visual local — sem autoridade, só para exibir progresso suavemente
 		for pos in tile_data.keys():
@@ -200,45 +219,115 @@ func _apply_authoritative_state(peer_id: int, pos: Vector2, vel: Vector2, tick: 
 	elif remote_players.has(peer_id):
 		remote_players[peer_id].update_state(pos, vel)
 
+# --- Economia: dinheiro e inventário ---
+# Único dono da verdade é o servidor. Cliente só manda intenção
+# (plantar, colher, comprar, vender); o servidor valida contra o
+# player_state real e empurra o resultado de volta.
+
+func _init_player_state(peer_id: int) -> void:
+	if not player_state.has(peer_id):
+		player_state[peer_id] = {
+			"money": 100,
+			"inventory": { "lumifruit_seed": 3, "voidroot_seed": 1 },
+		}
+	_push_economy_state(peer_id)
+
+func _push_economy_state(peer_id: int) -> void:
+	var st: Dictionary = player_state.get(peer_id, {})
+	if st.is_empty():
+		return
+	if peer_id == multiplayer.get_unique_id():
+		_apply_economy_state(st["money"], st["inventory"])
+	else:
+		rpc_id(peer_id, "_apply_economy_state", st["money"], st["inventory"])
+
+@rpc("authority", "reliable")
+func _apply_economy_state(money: int, inventory: Dictionary) -> void:
+	GameManager.set_money_authoritative(money)
+	Inventory.set_items_authoritative(inventory)
+	var hud := get_node_or_null("/root/World/HUD")
+	if hud and hud.has_method("refresh_inv"):
+		hud.refresh_inv()
+
+# Confere que quem está pedindo em nome de requester_id é de fato ele —
+# sem isso, um cliente poderia gastar/plantar usando o ID de outro jogador.
+func _valid_sender(requester_id: int) -> bool:
+	var sender := multiplayer.get_remote_sender_id()
+	return sender == 0 or sender == requester_id
+
+func request_buy_seed(seed: String) -> void:
+	var my_id := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_server_buy_seed(seed, my_id)
+	else:
+		rpc_id(1, "_server_buy_seed", seed, my_id)
+
+@rpc("any_peer", "reliable")
+func _server_buy_seed(seed: String, requester_id: int) -> void:
+	if not multiplayer.is_server() or not _valid_sender(requester_id):
+		return
+	var st: Dictionary = player_state.get(requester_id, {})
+	if st.is_empty():
+		return
+	var cost: int = GameData.SEED_COSTS.get(seed, -1)
+	if cost >= 0 and st["money"] >= cost:
+		st["money"] -= cost
+		st["inventory"][seed] = st["inventory"].get(seed, 0) + 1
+	_push_economy_state(requester_id)
+
+func request_sell_crop(crop: String) -> void:
+	var my_id := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_server_sell_crop(crop, my_id)
+	else:
+		rpc_id(1, "_server_sell_crop", crop, my_id)
+
+@rpc("any_peer", "reliable")
+func _server_sell_crop(crop: String, requester_id: int) -> void:
+	if not multiplayer.is_server() or not _valid_sender(requester_id):
+		return
+	var st: Dictionary = player_state.get(requester_id, {})
+	if st.is_empty():
+		return
+	var price: int = GameData.SELL_PRICES.get(crop, -1)
+	if price >= 0 and st["inventory"].get(crop, 0) > 0:
+		st["inventory"][crop] -= 1
+		if st["inventory"][crop] <= 0:
+			st["inventory"].erase(crop)
+		st["money"] += price
+	_push_economy_state(requester_id)
+
 # --- Plant / Harvest ---
 
 @rpc("any_peer", "reliable")
 func server_plant(grid_pos: Vector2i, crop: String, requester_id: int) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.is_server() or not _valid_sender(requester_id):
 		return
-	if not tile_data.has(grid_pos):
-		# Fix 1: reembolsa semente se tile inválido
-		_refund_or_call(requester_id, crop + "_seed")
+	var st: Dictionary = player_state.get(requester_id, {})
+	var seed_name: String = crop + "_seed"
+	var can_plant: bool = not st.is_empty() and tile_data.has(grid_pos) \
+		and tile_data[grid_pos]["state"] == 0 \
+		and st["inventory"].get(seed_name, 0) > 0
+	if not can_plant:
+		# Cliente pode ter previsto errado (semente que ele achava ter,
+		# tile que outro jogador ocupou primeiro etc). Corrige o estado dele.
+		_push_economy_state(requester_id)
 		return
+	st["inventory"][seed_name] -= 1
+	if st["inventory"][seed_name] <= 0:
+		st["inventory"].erase(seed_name)
 	var td: Dictionary = tile_data[grid_pos]
-	if td["state"] != 0:
-		# Fix 1: reembolsa semente se tile já ocupado (race condition)
-		_refund_or_call(requester_id, crop + "_seed")
-		return
 	td["state"] = 1
 	td["crop"] = crop
 	td["timer"] = 0.0
 	td["duration"] = GameData.CROPS[crop]["grow_time"]
 	_sync_tile_visual(grid_pos)
 	_rpc_tile(grid_pos)
-
-# Fix 1: devolve a semente ao cliente que plantou se o servidor rejeitar
-func _refund_or_call(requester_id: int, seed: String) -> void:
-	if requester_id == multiplayer.get_unique_id():
-		_refund_seed(seed)
-	else:
-		rpc_id(requester_id, "_refund_seed", seed)
-
-@rpc("authority", "reliable")
-func _refund_seed(seed: String) -> void:
-	Inventory.add(seed)
-	var hud := get_node_or_null("/root/World/HUD")
-	if hud and hud.has_method("refresh_inv"):
-		hud.refresh_inv()
+	_push_economy_state(requester_id)
 
 @rpc("any_peer", "reliable")
 func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.is_server() or not _valid_sender(requester_id):
 		return
 	if not tile_data.has(grid_pos):
 		return
@@ -246,24 +335,17 @@ func server_harvest(grid_pos: Vector2i, requester_id: int) -> void:
 	if td["state"] != 2:
 		return
 	var crop: String = td["crop"]
-	var price: int = GameData.CROPS[crop]["sell_price"]
 	td["state"] = 0
 	td["crop"] = ""
 	td["timer"] = 0.0
 	td["duration"] = 0.0
 	_sync_tile_visual(grid_pos)
 	_rpc_tile(grid_pos)
-	if requester_id == multiplayer.get_unique_id():
-		_credit_harvest(crop, price)
-	else:
-		rpc_id(requester_id, "_credit_harvest", crop, price)
-
-@rpc("authority", "reliable")
-func _credit_harvest(crop: String, _price: int) -> void:
-	Inventory.add(crop)
-	var hud := get_node_or_null("/root/World/HUD")
-	if hud and hud.has_method("refresh_inv"):
-		hud.refresh_inv()
+	var st: Dictionary = player_state.get(requester_id, {})
+	if st.is_empty():
+		return
+	st["inventory"][crop] = st["inventory"].get(crop, 0) + 1
+	_push_economy_state(requester_id)
 
 func _sync_tile_visual(grid_pos: Vector2i) -> void:
 	var td: Dictionary = tile_data[grid_pos]

@@ -9,13 +9,9 @@ func _ready() -> void:
 	Inventory.add("lumifruit_seed", 3)
 	Inventory.add("voidroot_seed", 1)
 
-func add_money(amount: int) -> void:
-	money += amount
+# Chamado quando o servidor (autoridade real) confirma/corrige nosso saldo.
+func set_money_authoritative(amount: int) -> void:
+	if amount == money:
+		return
+	money = amount
 	emit_signal("money_changed", money)
-
-func spend_money(amount: int) -> bool:
-	if money < amount:
-		return false
-	money -= amount
-	emit_signal("money_changed", money)
-	return true

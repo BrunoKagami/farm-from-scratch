@@ -27,29 +27,30 @@ func _build_ui() -> void:
 	close.pressed.connect(func(): visible = false)
 	vbox.add_child(close)
 
-func _sell(crop: String, price: int) -> void:
-	var qty: int = Inventory.count(crop)
-	if qty <= 0:
+# Compra/venda não mexem mais em Inventory/GameManager direto: é só um
+# pedido pro servidor, que é quem decide de verdade e manda o resultado
+# de volta via WorldGrid._apply_economy_state.
+
+func _sell(crop: String, _price: int) -> void:
+	if Inventory.count(crop) <= 0:
 		_show("Sem %s no inventário." % crop)
 		return
-	Inventory.remove(crop)
-	GameManager.add_money(price)
-	_show("Vendido %s! +$%d" % [crop, price])
-	_refresh_hud()
+	var world_grid := get_node_or_null("/root/World")
+	if world_grid == null:
+		return
+	world_grid.request_sell_crop(crop)
+	_show("Vendendo %s..." % crop)
 
 func _buy_seed(seed: String, cost: int) -> void:
-	if not GameManager.spend_money(cost):
+	if GameManager.money < cost:
 		_show("Dinheiro insuficiente.")
 		return
-	Inventory.add(seed)
-	_show("Comprado: %s" % seed)
-	_refresh_hud()
+	var world_grid := get_node_or_null("/root/World")
+	if world_grid == null:
+		return
+	world_grid.request_buy_seed(seed)
+	_show("Comprando %s..." % seed)
 
 func _show(text: String) -> void:
 	if is_instance_valid(msg_label):
 		msg_label.text = text
-
-func _refresh_hud() -> void:
-	var hud := get_node_or_null("/root/World/HUD")
-	if hud and hud.has_method("refresh_inv"):
-		hud.refresh_inv()

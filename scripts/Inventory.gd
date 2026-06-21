@@ -15,3 +15,7 @@ func remove(item: String, qty: int = 1) -> bool:
 
 func count(item: String) -> int:
 	return items.get(item, 0)
+
+# Chamado quando o servidor (autoridade real) confirma/corrige nosso inventário.
+func set_items_authoritative(items_in: Dictionary) -> void:
+	items = items_in.duplicate(true)
