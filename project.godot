@@ -21,6 +21,7 @@ GameData="*res://scripts/GameData.gd"
 GameManager="*res://scripts/GameManager.gd"
 Inventory="*res://scripts/Inventory.gd"
 NetworkManager="*res://multiplayer/NetworkManager.gd"
+SaveManager="*res://scripts/SaveManager.gd"
 
 [display]
 

@@ -12,6 +12,7 @@ signal reconnect_failed
 
 var players: Dictionary = {}
 var is_dedicated := false
+var player_name := ""
 
 # Reconexão automática: navegador mobile suspende a aba quando a tela
 # bloqueia, e o WebSocket morre de verdade nesse meio tempo (confirmado via

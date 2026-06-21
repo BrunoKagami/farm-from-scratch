@@ -7,6 +7,9 @@ build/
 # Cloudflared binary
 cloudflared.exe
 
+# Dados de jogador/mundo salvos pelo servidor (locais, não versionados)
+saves/
+
 # OS
 .DS_Store
 Thumbs.db

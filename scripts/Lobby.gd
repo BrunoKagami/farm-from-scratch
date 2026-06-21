@@ -5,6 +5,7 @@ extends Control
 const DEFAULT_SERVER_URL := "https://farm.ninjautilitarios.com.br"
 
 @onready var status_label: Label = $VBox/StatusLabel
+@onready var name_input: LineEdit = $VBox/NameInput
 @onready var ip_input: LineEdit  = $VBox/IPInput
 @onready var host_btn: Button    = $VBox/HostBtn
 @onready var join_btn: Button    = $VBox/JoinBtn
@@ -78,8 +79,14 @@ func _show_url_overlay() -> void:
 		})();
 	""")
 
+func _player_name() -> String:
+	var n := name_input.text.strip_edges()
+	return n if not n.is_empty() else "Jogador%d" % (randi() % 10000)
+
 func _on_host() -> void:
-	get_node("/root/NetworkManager").host()
+	var nm := get_node("/root/NetworkManager")
+	nm.player_name = _player_name()
+	nm.host()
 	join_btn.disabled = true
 	host_btn.disabled = true
 	_start_game()
@@ -92,6 +99,7 @@ func _on_join() -> void:
 	if addr.is_empty():
 		addr = "127.0.0.1"
 	var nm := get_node("/root/NetworkManager")
+	nm.player_name = _player_name()
 	nm.join(addr)
 	status_label.text = "Conectando a\n%s…" % nm._build_url(addr)
 	host_btn.disabled = true

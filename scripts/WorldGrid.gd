@@ -19,6 +19,7 @@ var remote_bodies: Dictionary = {}
 # jogador. O cliente nunca é dono dessa verdade — Inventory/GameManager
 # locais são só um cache otimista que o servidor corrige quando diverge.
 var player_state: Dictionary = {}
+var peer_names: Dictionary = {}
 const ECONOMY_RESYNC_INTERVAL := 10.0
 var _economy_resync_timer := 0.0
 
@@ -37,36 +38,27 @@ func _ready() -> void:
 	if not multiplayer.is_server() and \
 	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc_id(1, "request_full_state")
+	register_my_name()
 	if nm:
 		# Reconexão automática (NetworkManager): ao reconectar, viramos um
-		# peer novo do ponto de vista do servidor — jogadores remotos e
-		# economia já voltam pelo handshake normal de conexão, mas o
-		# estado dos canteiros (tile_data) precisa ser pedido de novo.
+		# peer novo do ponto de vista do servidor — jogadores remotos já
+		# voltam pelo handshake normal de conexão, mas o estado dos
+		# canteiros (tile_data) e nosso registro de nome precisam ser
+		# pedidos de novo.
 		nm.connected_to_server.connect(_on_reconnected)
 
 func _on_reconnected() -> void:
 	if not multiplayer.is_server() and \
 	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc_id(1, "request_full_state")
-		# Reconectar nos dá um peer id novo pro servidor, que não tem
-		# memória de onde estávamos — o corpo dele nasce no spawn padrão.
-		# Avisamos a posição real assim que possível pra ele não nos puxar
-		# de volta pro spawn, e damos um respiro pra correção até essa
-		# mensagem chegar (senão dá um pulo pro spawn e depois de volta).
+		# Reconectar nos dá um peer id novo pro servidor — ele não tem
+		# memória de onde estávamos até carregarmos o save pelo nome.
+		# Suprime correção por um instante pra não saltar pro spawn
+		# enquanto isso (o corpo novo nasce lá até o save carregar).
 		var local_player := get_node_or_null("Player")
-		if local_player:
-			rpc_id(1, "_resume_at", local_player.global_position)
-			if local_player.has_method("suppress_correction"):
-				local_player.suppress_correction(1.0)
-
-@rpc("any_peer", "reliable")
-func _resume_at(pos: Vector2) -> void:
-	if not multiplayer.is_server():
-		return
-	var sender := multiplayer.get_remote_sender_id()
-	if sender == 0 or not remote_bodies.has(sender):
-		return
-	remote_bodies[sender].global_position = pos
+		if local_player and local_player.has_method("suppress_correction"):
+			local_player.suppress_correction(1.0)
+		register_my_name()
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
@@ -80,6 +72,8 @@ func _build_grid() -> void:
 			var pos := Vector2i(x, y)
 			tiles[pos] = tile
 			tile_data[pos] = { "state": 0, "crop": "", "timer": 0.0, "duration": 0.0 }
+	if multiplayer.is_server():
+		_load_world_state()
 
 func get_tile(grid_pos: Vector2i) -> Node2D:
 	return tiles.get(grid_pos, null)
@@ -89,12 +83,13 @@ func get_tile(grid_pos: Vector2i) -> Node2D:
 func _on_player_connected(peer_id: int) -> void:
 	if multiplayer.is_server():
 		_spawn_remote_body(peer_id)
-		_init_player_state(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
 
 func _on_player_disconnected(peer_id: int) -> void:
+	if multiplayer.is_server():
+		_save_player_state(peer_id)
 	if remote_players.has(peer_id):
 		remote_players[peer_id].queue_free()
 		remote_players.erase(peer_id)
@@ -103,6 +98,7 @@ func _on_player_disconnected(peer_id: int) -> void:
 		remote_bodies.erase(peer_id)
 	peer_inputs.erase(peer_id)
 	player_state.erase(peer_id)
+	peer_names.erase(peer_id)
 
 func _spawn_remote_player(peer_id: int) -> void:
 	if remote_players.has(peer_id):
@@ -175,12 +171,16 @@ func _process(delta: float) -> void:
 		# Resync periódico: garante que dinheiro/inventário do cliente nunca
 		# fiquem divergentes para sempre por um RPC perdido — de tempo em
 		# tempo o servidor reafirma a verdade pra todo mundo, igual já
-		# fazemos com o horário do dia.
+		# fazemos com o horário do dia. Aproveita o mesmo timer pra salvar
+		# em disco — perde no máximo ECONOMY_RESYNC_INTERVAL segundos de
+		# progresso se o servidor cair sem o save de desconexão/shutdown.
 		_economy_resync_timer += delta
 		if _economy_resync_timer >= ECONOMY_RESYNC_INTERVAL:
 			_economy_resync_timer = 0.0
 			for peer_id in player_state.keys():
 				_push_economy_state(peer_id)
+				_save_player_state(peer_id)
+			_save_world_state()
 	else:
 		# Interpolação visual local — sem autoridade, só para exibir progresso suavemente
 		for pos in tile_data.keys():
@@ -264,13 +264,106 @@ func _apply_authoritative_state(peer_id: int, pos: Vector2, vel: Vector2, tick: 
 # (plantar, colher, comprar, vender); o servidor valida contra o
 # player_state real e empurra o resultado de volta.
 
-func _init_player_state(peer_id: int) -> void:
-	if not player_state.has(peer_id):
+# Identidade entre sessões: nome digitado no Lobby. Servidor dedicado
+# (sem $Player) não tem ninguém pra registrar.
+func register_my_name() -> void:
+	if DisplayServer.get_name() == "headless" and multiplayer.is_server():
+		return
+	var nm := get_node_or_null("/root/NetworkManager")
+	var player_name: String = nm.player_name if nm else ""
+	if multiplayer.is_server():
+		_register_name(player_name)
+	else:
+		rpc_id(1, "_register_name", player_name)
+
+@rpc("any_peer", "reliable")
+func _register_name(player_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var peer_id := sender if sender != 0 else multiplayer.get_unique_id()
+	var clean: String = player_name.strip_edges()
+	if clean.is_empty():
+		clean = "Jogador%d" % peer_id
+	peer_names[peer_id] = clean
+	var saved := SaveManager.load_player(clean)
+	if saved.is_empty():
 		player_state[peer_id] = {
 			"money": 100,
 			"inventory": { "lumifruit_seed": 3, "voidroot_seed": 1 },
 		}
+	else:
+		player_state[peer_id] = {
+			"money": int(saved.get("money", 100)),
+			"inventory": saved.get("inventory", {}),
+		}
+		if saved.has("pos"):
+			var p: Array = saved["pos"]
+			_set_player_position(peer_id, Vector2(p[0], p[1]))
 	_push_economy_state(peer_id)
+
+func _set_player_position(peer_id: int, pos: Vector2) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		var local_player := get_node_or_null("Player")
+		if local_player:
+			local_player.global_position = pos
+	elif remote_bodies.has(peer_id):
+		remote_bodies[peer_id].global_position = pos
+
+func _get_player_position(peer_id: int) -> Vector2:
+	if peer_id == multiplayer.get_unique_id():
+		var local_player := get_node_or_null("Player")
+		return local_player.global_position if local_player else GameData.PLAYER_SPAWN
+	if remote_bodies.has(peer_id):
+		return remote_bodies[peer_id].global_position
+	return GameData.PLAYER_SPAWN
+
+func _save_player_state(peer_id: int) -> void:
+	if not player_state.has(peer_id) or not peer_names.has(peer_id):
+		return
+	var st: Dictionary = player_state[peer_id]
+	var pos := _get_player_position(peer_id)
+	SaveManager.save_player(peer_names[peer_id], {
+		"money": st["money"],
+		"inventory": st["inventory"],
+		"pos": [pos.x, pos.y],
+	})
+
+func _load_world_state() -> void:
+	var saved := SaveManager.load_world()
+	var arr: Array = saved.get("tiles", [])
+	for entry in arr:
+		var pos := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		if not tile_data.has(pos):
+			continue
+		tile_data[pos] = {
+			"state": int(entry.get("state", 0)),
+			"crop": entry.get("crop", ""),
+			"timer": float(entry.get("timer", 0.0)),
+			"duration": float(entry.get("duration", 0.0)),
+		}
+		_sync_tile_visual(pos)
+
+func _save_world_state() -> void:
+	var arr: Array = []
+	for pos in tile_data.keys():
+		var td: Dictionary = tile_data[pos]
+		if td["state"] == 0:
+			continue
+		arr.append({
+			"x": pos.x, "y": pos.y,
+			"state": td["state"], "crop": td["crop"],
+			"timer": td["timer"], "duration": td["duration"],
+		})
+	SaveManager.save_world({ "tiles": arr })
+
+# Salva tudo antes do servidor encerrar (fechar a janela / Ctrl+C),
+# pra não perder progresso entre o último resync periódico e a queda.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and multiplayer.is_server():
+		for peer_id in player_state.keys():
+			_save_player_state(peer_id)
+		_save_world_state()
 
 func _push_economy_state(peer_id: int) -> void:
 	var st: Dictionary = player_state.get(peer_id, {})

@@ -29,6 +29,10 @@ text = "Bem-vindo! Hospede ou entre numa partida."
 horizontal_alignment = 1
 autowrap_mode = 3
 
+[node name="NameInput" type="LineEdit" parent="VBox" unique_id=110428733]
+layout_mode = 2
+placeholder_text = "Seu nome"
+
 [node name="IPInput" type="LineEdit" parent="VBox" unique_id=639399371]
 layout_mode = 2
 placeholder_text = "IP ou URL do tunel (vazio = localhost)"
