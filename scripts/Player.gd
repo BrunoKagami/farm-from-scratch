@@ -88,6 +88,7 @@ func _update_state(dir: Vector2) -> void:
 	if _state == State.CHOP and Time.get_ticks_msec() < _state_locked_until_msec:
 		return
 
+	var prev_dir := _last_dir
 	if dir != Vector2.ZERO:
 		if abs(dir.x) >= abs(dir.y):
 			_last_dir = "right" if dir.x > 0 else "left"
@@ -95,7 +96,10 @@ func _update_state(dir: Vector2) -> void:
 			_last_dir = "down" if dir.y > 0 else "up"
 
 	var desired: State = State.WALK if dir != Vector2.ZERO else State.IDLE
-	if desired != _state:
+	# Reentra também quando só a direção muda (ex: soltar uma tecla
+	# diagonal e continuar andando reto) — sem isso a animação ficava
+	# travada na direção antiga porque o estado (WALK) não mudou.
+	if desired != _state or _last_dir != prev_dir:
 		_enter_state(desired)
 
 # Único lugar que toca animação/offset — cada estado configura o que
