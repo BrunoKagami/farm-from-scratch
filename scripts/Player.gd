@@ -67,6 +67,10 @@ func _physics_process(_delta: float) -> void:
 		Input.get_axis("ui_left", "ui_right"),
 		Input.get_axis("ui_up", "ui_down")
 	).normalized()
+	# Estados com duração fixa (golpe de machado) travam o movimento —
+	# não dá pra sair andando no meio da animação de corte.
+	if _state == State.CHOP and Time.get_ticks_msec() < _state_locked_until_msec:
+		direction = Vector2.ZERO
 	# Previsão local: move imediatamente para resposta instantânea ao input.
 	# Quem decide a posição "oficial" de todo mundo é sempre o servidor —
 	# isto aqui é só o palpite local até a correção chegar.
