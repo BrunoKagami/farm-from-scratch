@@ -37,13 +37,15 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _waiting_for_input:
 		return
-	var result = JavaScriptBridge.eval("window.__ffs_text__ || ''")
-	if result != null and typeof(result) == TYPE_STRING and result != "":
-		JavaScriptBridge.eval("window.__ffs_text__ = ''")
-		_waiting_for_input = false
-		if _overlay_target:
-			_overlay_target.text = (result as String).strip_edges()
-			_overlay_target = null
+	var result = JavaScriptBridge.eval("window.__ffs_text__ !== undefined ? window.__ffs_text__ : null")
+	if result == null:
+		return
+	JavaScriptBridge.eval("window.__ffs_text__ = undefined")
+	_waiting_for_input = false
+	# String vazia = cancelado pelo X; só aplica se realmente digitou algo.
+	if _overlay_target and typeof(result) == TYPE_STRING and result != "":
+		_overlay_target.text = (result as String).strip_edges()
+	_overlay_target = null
 
 func _setup_web_input_overlay(field: LineEdit, label: String, input_type: String, placeholder: String, tap_placeholder: String) -> void:
 	field.focus_mode = Control.FOCUS_NONE
@@ -63,6 +65,9 @@ func _show_text_overlay(field: LineEdit, label: String, input_type: String, plac
 			var ov = document.createElement('div');
 			ov.id = '__ffs_overlay__';
 			ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
+			var closeBtn = document.createElement('button');
+			closeBtn.textContent = '✕';
+			closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;width:40px;height:40px;font-size:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:50%%;cursor:pointer;';
 			var lbl = document.createElement('p');
 			lbl.textContent = '%s';
 			lbl.style.cssText = 'color:#fff;font-size:20px;font-family:sans-serif;margin:0;';
@@ -79,8 +84,14 @@ func _show_text_overlay(field: LineEdit, label: String, input_type: String, plac
 				window.__ffs_text__ = inp.value;
 				document.body.removeChild(ov);
 			}
+			function cancel() {
+				window.__ffs_text__ = '';
+				document.body.removeChild(ov);
+			}
 			btn.onclick = confirm;
-			inp.addEventListener('keydown', function(e){ if(e.key==='Enter') confirm(); });
+			closeBtn.onclick = cancel;
+			inp.addEventListener('keydown', function(e){ if(e.key==='Enter') confirm(); if(e.key==='Escape') cancel(); });
+			ov.appendChild(closeBtn);
 			ov.appendChild(lbl);
 			ov.appendChild(inp);
 			ov.appendChild(btn);
