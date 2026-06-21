@@ -11,6 +11,11 @@ extends CanvasLayer
 # pra diagnosticar divergência de posição entre clientes.
 var debug_pos_label: Label
 
+# Indicador de reconexão: navegador mobile mata o WebSocket quando a tela
+# bloqueia (confirmado), então o NetworkManager tenta reconectar sozinho —
+# isso aqui só deixa visível o que está acontecendo.
+var reconnect_label: Label
+
 func _ready() -> void:
 	GameManager.money_changed.connect(_on_money_changed)
 	_on_money_changed(GameManager.money)
@@ -19,6 +24,21 @@ func _ready() -> void:
 	tunnel_label.visible = multiplayer.is_server()
 	if multiplayer.is_server():
 		tunnel_label.text = "Host  porta 7777  |  cloudflared tunnel --url http://localhost:7777"
+
+	reconnect_label = Label.new()
+	reconnect_label.name = "ReconnectLabel"
+	reconnect_label.anchor_left = 0.5
+	reconnect_label.anchor_right = 0.5
+	reconnect_label.anchor_top = 0.5
+	reconnect_label.anchor_bottom = 0.5
+	reconnect_label.offset_left = -160
+	reconnect_label.offset_right = 160
+	reconnect_label.offset_top = -50
+	reconnect_label.offset_bottom = -20
+	reconnect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reconnect_label.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
+	reconnect_label.visible = false
+	add_child(reconnect_label)
 
 	debug_pos_label = Label.new()
 	debug_pos_label.name = "DebugPosLabel"
@@ -43,6 +63,22 @@ func _ready() -> void:
 	debug_btn.modulate.a = 0.6
 	debug_btn.pressed.connect(func(): debug_pos_label.visible = not debug_pos_label.visible)
 	add_child(debug_btn)
+
+	var nm := get_node_or_null("/root/NetworkManager")
+	if nm:
+		nm.reconnecting.connect(_on_reconnecting)
+		nm.reconnect_failed.connect(_on_reconnect_failed)
+		nm.connected_to_server.connect(_on_reconnected)
+
+func _on_reconnecting(attempt: int) -> void:
+	reconnect_label.text = "Conexão perdida — reconectando... (%d)" % attempt
+	reconnect_label.visible = true
+
+func _on_reconnect_failed() -> void:
+	reconnect_label.text = "Não foi possível reconectar. Recarregue a página."
+
+func _on_reconnected() -> void:
+	reconnect_label.visible = false
 
 func update_debug_positions(text: String) -> void:
 	debug_pos_label.text = text

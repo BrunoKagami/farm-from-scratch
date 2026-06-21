@@ -7,9 +7,23 @@ signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
 signal connection_failed
 signal connected_to_server
+signal reconnecting(attempt: int)
+signal reconnect_failed
 
 var players: Dictionary = {}
 var is_dedicated := false
+
+# Reconexão automática: navegador mobile suspende a aba quando a tela
+# bloqueia, e o WebSocket morre de verdade nesse meio tempo (confirmado via
+# overlay de debug — get_connection_status() volta DISCONNECTED e o ID some).
+# Sem isso, o jogador fica olhando uma tela "viva" mas sem rede pra sempre.
+const RECONNECT_DELAY := 3.0
+const MAX_RECONNECT_ATTEMPTS := 10
+var last_address := ""
+var _was_connected := false
+var _reconnecting := false
+var _reconnect_attempts := 0
+var _reconnect_timer := 0.0
 
 func _ready() -> void:
 	is_dedicated = DisplayServer.get_name() == "headless"
@@ -18,10 +32,38 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if multiplayer.multiplayer_peer and \
 	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		multiplayer.multiplayer_peer.poll()
+		_watch_connection_status()
+	if _reconnecting:
+		_reconnect_timer -= delta
+		if _reconnect_timer <= 0.0:
+			_attempt_reconnect()
+
+func _watch_connection_status() -> void:
+	# Só clientes reconectam — o host não "perde conexão consigo mesmo".
+	if multiplayer.is_server() or last_address.is_empty():
+		return
+	var status := multiplayer.multiplayer_peer.get_connection_status()
+	if status == MultiplayerPeer.CONNECTION_CONNECTED:
+		_was_connected = true
+	elif status == MultiplayerPeer.CONNECTION_DISCONNECTED and _was_connected and not _reconnecting:
+		_was_connected = false
+		_reconnecting = true
+		_reconnect_attempts = 0
+		_reconnect_timer = 0.5
+
+func _attempt_reconnect() -> void:
+	_reconnect_attempts += 1
+	if _reconnect_attempts > MAX_RECONNECT_ATTEMPTS:
+		_reconnecting = false
+		emit_signal("reconnect_failed")
+		return
+	emit_signal("reconnecting", _reconnect_attempts)
+	join(last_address)
+	_reconnect_timer = RECONNECT_DELAY
 
 func host() -> void:
 	var peer := WebSocketMultiplayerPeer.new()
@@ -34,6 +76,7 @@ func host() -> void:
 		players[1] = { "id": 1 }
 
 func join(address: String) -> void:
+	last_address = address
 	var url := _build_url(address)
 	var peer := WebSocketMultiplayerPeer.new()
 	var err := peer.create_client(url)
@@ -60,6 +103,9 @@ func _build_url(input: String) -> String:
 func disconnect_from_game() -> void:
 	multiplayer.multiplayer_peer = null
 	players.clear()
+	last_address = ""
+	_was_connected = false
+	_reconnecting = false
 
 func is_host() -> bool:
 	return multiplayer.is_server()
@@ -88,6 +134,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	emit_signal("player_disconnected", peer_id)
 
 func _on_connected_to_server() -> void:
+	_reconnecting = false
+	_reconnect_attempts = 0
+	_was_connected = true
 	emit_signal("connected_to_server")
 
 func _on_connection_failed() -> void:

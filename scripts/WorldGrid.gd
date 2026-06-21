@@ -37,6 +37,17 @@ func _ready() -> void:
 	if not multiplayer.is_server() and \
 	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc_id(1, "request_full_state")
+	if nm:
+		# Reconexão automática (NetworkManager): ao reconectar, viramos um
+		# peer novo do ponto de vista do servidor — jogadores remotos e
+		# economia já voltam pelo handshake normal de conexão, mas o
+		# estado dos canteiros (tile_data) precisa ser pedido de novo.
+		nm.connected_to_server.connect(_on_reconnected)
+
+func _on_reconnected() -> void:
+	if not multiplayer.is_server() and \
+	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
+		rpc_id(1, "request_full_state")
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
