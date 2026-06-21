@@ -166,12 +166,23 @@ func _update_debug_positions() -> void:
 	if hud == null or not hud.has_method("update_debug_positions"):
 		return
 	var lines: Array[String] = []
+	if multiplayer.multiplayer_peer:
+		lines.append("conn:%s" % _connection_status_name())
 	var local_player := get_node_or_null("Player")
 	if local_player:
 		lines.append("eu(%d): %s" % [multiplayer.get_unique_id(), _fmt(local_player.global_position)])
 	for peer_id in remote_players.keys():
 		lines.append("p%d: %s" % [peer_id, _fmt(remote_players[peer_id].position)])
 	hud.update_debug_positions(" | ".join(lines))
+
+# Diagnóstico temporário: ajuda a confirmar se o WebSocket morre de verdade
+# quando o celular bloqueia a tela, ou se só fica suspenso e volta sozinho.
+func _connection_status_name() -> String:
+	match multiplayer.multiplayer_peer.get_connection_status():
+		MultiplayerPeer.CONNECTION_DISCONNECTED: return "DISCONNECTED"
+		MultiplayerPeer.CONNECTION_CONNECTING: return "CONNECTING"
+		MultiplayerPeer.CONNECTION_CONNECTED: return "CONNECTED"
+		_: return "?"
 
 func _fmt(v: Vector2) -> String:
 	return "(%d,%d)" % [v.x, v.y]

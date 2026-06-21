@@ -1,5 +1,9 @@
 extends Control
 
+# Túnel nomeado fixo (ver tunnel_fixo.bat) — pré-preenche o campo pra não
+# precisar colar o link toda vez. Ainda dá pra tocar/editar pra usar outro.
+const DEFAULT_SERVER_URL := "https://farm.ninjautilitarios.com.br"
+
 @onready var status_label: Label = $VBox/StatusLabel
 @onready var ip_input: LineEdit  = $VBox/IPInput
 @onready var host_btn: Button    = $VBox/HostBtn
@@ -15,6 +19,8 @@ func _ready() -> void:
 	nm.connected_to_server.connect(_on_connected)
 	nm.connection_failed.connect(_on_failed)
 	nm.player_connected.connect(_on_player_connected)
+
+	ip_input.text = DEFAULT_SERVER_URL
 
 	if _on_web:
 		ip_input.focus_mode = Control.FOCUS_NONE
