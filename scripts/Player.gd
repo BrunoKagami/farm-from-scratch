@@ -19,6 +19,14 @@ const CHOP_OFFSET := Vector2(0, -4)
 const CHOP_DURATION := 0.5
 var _chopping_until_msec := 0
 
+# Machado: item fixo do jogador, não-contável e não-desgastável (não mora
+# no Inventory, não some/baixa quantidade) — é só mais uma opção no ciclo
+# de seleção, igual as culturas.
+const DIR_VECTORS := {
+	"down": Vector2.DOWN, "up": Vector2.UP, "left": Vector2.LEFT, "right": Vector2.RIGHT,
+}
+const CHOP_SENSOR_RANGE := 16.0
+
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
@@ -90,14 +98,9 @@ func _try_interact() -> void:
 		_open_shop()
 		return
 
-	var world_grid_for_tree := get_node_or_null("/root/World")
-	if world_grid_for_tree and world_grid_for_tree.has_method("get_near_tree"):
-		var tree_id: int = world_grid_for_tree.get_near_tree(global_position)
-		if tree_id >= 0:
-			_hud_msg("Cortando árvore...")
-			_play_chop_feedback()
-			world_grid_for_tree.request_chop_tree(tree_id)
-			return
+	if selected_crop == "axe":
+		_try_chop()
+		return
 
 	var grid_pos := Vector2i(
 		int(global_position.x / GameData.TILE_SIZE),
@@ -140,6 +143,22 @@ func _try_interact() -> void:
 		else:
 			world_grid.rpc_id(1, "server_harvest", grid_pos, my_id)
 
+# O golpe acontece sempre que o machado está selecionado, tenha árvore
+# na frente ou não — é a ação de cortar em si, não uma reação a achar algo.
+# O sensor fica na direção que o personagem está olhando (_last_dir), não
+# num raio ao redor dele — não corta o que está atrás.
+func _try_chop() -> void:
+	_play_chop_feedback()
+	var world_grid := get_node_or_null("/root/World")
+	if world_grid == null or not world_grid.has_method("get_near_tree"):
+		return
+	var facing: Vector2 = DIR_VECTORS.get(_last_dir, Vector2.DOWN)
+	var sensor_pos := global_position + facing * CHOP_SENSOR_RANGE
+	var tree_id: int = world_grid.get_near_tree(sensor_pos)
+	if tree_id >= 0:
+		_hud_msg("Cortando árvore...")
+		world_grid.request_chop_tree(tree_id)
+
 func _play_chop_feedback() -> void:
 	if _anim == null:
 		return
@@ -169,7 +188,7 @@ func _update_anim(dir: Vector2) -> void:
 	_anim.play("walk_" + _last_dir)
 
 func _cycle_crop() -> void:
-	var crops := ["lumifruit", "voidroot", "starbloom"]
+	var crops := ["lumifruit", "voidroot", "starbloom", "axe"]
 	var idx := crops.find(selected_crop)
 	selected_crop = crops[(idx + 1) % crops.size()]
 	var hud := get_node_or_null("/root/World/HUD")

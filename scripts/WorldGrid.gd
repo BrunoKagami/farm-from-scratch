@@ -96,10 +96,13 @@ func _build_trees() -> void:
 		tree_data[i] = { "chopped": false, "timer": 0.0 }
 
 func get_near_tree(global_pos: Vector2) -> int:
+	# global_pos já vem deslocado pra frente do jogador (sensor direcional
+	# em Player.gd) — raio menor aqui porque a distância pra árvore certa
+	# já foi reduzida por esse deslocamento.
 	for tree_id in trees.keys():
 		if tree_data[tree_id]["chopped"]:
 			continue
-		if global_pos.distance_to(trees[tree_id].global_position) < 28.0:
+		if global_pos.distance_to(trees[tree_id].global_position) < 22.0:
 			return tree_id
 	return -1
 

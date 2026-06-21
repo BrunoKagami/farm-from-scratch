@@ -96,6 +96,9 @@ func refresh_inv() -> void:
 		inv_label.text = "Inv: " + "  ".join(parts)
 
 func refresh_crop(crop: String) -> void:
+	if crop == "axe":
+		crop_label.text = "Ferramenta: Machado"
+		return
 	var cost: int = GameData.CROPS[crop]["seed_cost"]
 	crop_label.text = "Cultura: %s  ($%d)" % [crop, cost]
 
