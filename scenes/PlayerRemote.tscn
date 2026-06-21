@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://playerremote001"]
+[gd_scene format=3 uid="uid://bxq8ao17hnt3e"]
 
 [ext_resource type="Script" path="res://scripts/PlayerRemote.gd" id="1_pr"]
 [ext_resource type="Texture2D" path="res://assets/environment/shadow_blob.png" id="2_shadow"]

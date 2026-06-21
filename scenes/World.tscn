@@ -1,95 +1,17 @@
-[gd_scene load_steps=27 format=3 uid="uid://world_main"]
+[gd_scene format=3 uid="uid://dvjltb1mohs77"]
 
-[ext_resource type="Script" path="res://scripts/DayNight.gd" id="11_dn"]
-[ext_resource type="Script" path="res://scripts/WorldGrid.gd" id="1_wg"]
-[ext_resource type="Script" path="res://scripts/Player.gd" id="2_pl"]
-[ext_resource type="Script" path="res://scripts/WorldMap.gd" id="3_wm"]
-[ext_resource type="Script" path="res://scripts/HUD.gd" id="4_hud"]
-[ext_resource type="Script" path="res://scripts/VirtualControls.gd" id="5_vc"]
-[ext_resource type="Script" path="res://scripts/Shop.gd" id="10_shop"]
-[ext_resource type="Texture2D" path="res://assets/environment/shop_building.png" id="6_shop"]
-[ext_resource type="Texture2D" path="res://assets/environment/prop_lamp.png" id="7_lamp"]
-[ext_resource type="Texture2D" path="res://assets/environment/prop_sign.png" id="8_sign"]
-[ext_resource type="Texture2D" path="res://assets/characters/personagem_Base-Sheet.png" id="9_char"]
-[ext_resource type="Texture2D" path="res://assets/environment/shadow_blob.png" id="12_shadow"]
-
-[sub_resource type="AtlasTexture" id="at_d0"]
-atlas = ExtResource("9_char")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_d1"]
-atlas = ExtResource("9_char")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_d2"]
-atlas = ExtResource("9_char")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_l0"]
-atlas = ExtResource("9_char")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_l1"]
-atlas = ExtResource("9_char")
-region = Rect2(128, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_l2"]
-atlas = ExtResource("9_char")
-region = Rect2(160, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_r0"]
-atlas = ExtResource("9_char")
-region = Rect2(192, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_r1"]
-atlas = ExtResource("9_char")
-region = Rect2(224, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_r2"]
-atlas = ExtResource("9_char")
-region = Rect2(256, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_u0"]
-atlas = ExtResource("9_char")
-region = Rect2(288, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_u1"]
-atlas = ExtResource("9_char")
-region = Rect2(320, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="at_u2"]
-atlas = ExtResource("9_char")
-region = Rect2(352, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="player_frames"]
-animations = [{
-"frames": [{"duration": 1.0, "texture": SubResource("at_d0")}, {"duration": 1.0, "texture": SubResource("at_d1")}, {"duration": 1.0, "texture": SubResource("at_d2")}],
-"loop": true, "name": &"walk_down", "speed": 8.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_u0")}, {"duration": 1.0, "texture": SubResource("at_u1")}, {"duration": 1.0, "texture": SubResource("at_u2")}],
-"loop": true, "name": &"walk_left", "speed": 8.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_l0")}, {"duration": 1.0, "texture": SubResource("at_l1")}, {"duration": 1.0, "texture": SubResource("at_l2")}],
-"loop": true, "name": &"walk_right", "speed": 8.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_r0")}, {"duration": 1.0, "texture": SubResource("at_r1")}, {"duration": 1.0, "texture": SubResource("at_r2")}],
-"loop": true, "name": &"walk_up", "speed": 8.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_d0")}],
-"loop": false, "name": &"idle_down", "speed": 1.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_u0")}],
-"loop": false, "name": &"idle_left", "speed": 1.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_l0")}],
-"loop": false, "name": &"idle_right", "speed": 1.0
-}, {
-"frames": [{"duration": 1.0, "texture": SubResource("at_r0")}],
-"loop": false, "name": &"idle_up", "speed": 1.0
-}]
-
-[sub_resource type="RectangleShape2D" id="shape_player"]
-size = Vector2(14, 14)
+[ext_resource type="Script" uid="uid://dqk4qeyhifqle" path="res://scripts/WorldGrid.gd" id="1_wg"]
+[ext_resource type="Script" uid="uid://c5yinl241oqfh" path="res://scripts/Player.gd" id="2_pl"]
+[ext_resource type="Script" uid="uid://dphmsn0aqngvb" path="res://scripts/WorldMap.gd" id="3_wm"]
+[ext_resource type="Script" uid="uid://dif3b2to4l6tn" path="res://scripts/HUD.gd" id="4_hud"]
+[ext_resource type="Script" uid="uid://7c1ey1vophsm" path="res://scripts/VirtualControls.gd" id="5_vc"]
+[ext_resource type="Texture2D" uid="uid://x01wbydkvi3q" path="res://assets/environment/shop_building.png" id="6_shop"]
+[ext_resource type="Texture2D" uid="uid://dy8wuhk3s2plh" path="res://assets/environment/prop_lamp.png" id="7_lamp"]
+[ext_resource type="Texture2D" uid="uid://br0u3pm863uf5" path="res://assets/environment/prop_sign.png" id="8_sign"]
+[ext_resource type="Texture2D" uid="uid://o2ljlk2rf83c" path="res://assets/characters/personagem_Base-Sheet.png" id="9_char"]
+[ext_resource type="Script" uid="uid://b3e1hix07by70" path="res://scripts/Shop.gd" id="10_shop"]
+[ext_resource type="Script" uid="uid://npqtjng8uepm" path="res://scripts/DayNight.gd" id="11_dn"]
+[ext_resource type="Texture2D" uid="uid://bfe3vc4iy7o7s" path="res://assets/environment/shadow_blob.png" id="12_shadow"]
 
 [sub_resource type="RectangleShape2D" id="shape_shop"]
 size = Vector2(175, 98)
@@ -100,105 +22,244 @@ size = Vector2(14, 50)
 [sub_resource type="RectangleShape2D" id="shape_sign"]
 size = Vector2(56, 39)
 
-[node name="World" type="Node2D"]
+[sub_resource type="RectangleShape2D" id="shape_player"]
+size = Vector2(14, 14)
+
+[sub_resource type="AtlasTexture" id="at_d0"]
+atlas = ExtResource("9_char")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_u0"]
+atlas = ExtResource("9_char")
+region = Rect2(288, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_l0"]
+atlas = ExtResource("9_char")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_r0"]
+atlas = ExtResource("9_char")
+region = Rect2(192, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_d1"]
+atlas = ExtResource("9_char")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_d2"]
+atlas = ExtResource("9_char")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_u1"]
+atlas = ExtResource("9_char")
+region = Rect2(320, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_u2"]
+atlas = ExtResource("9_char")
+region = Rect2(352, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_l1"]
+atlas = ExtResource("9_char")
+region = Rect2(128, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_l2"]
+atlas = ExtResource("9_char")
+region = Rect2(160, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_r1"]
+atlas = ExtResource("9_char")
+region = Rect2(224, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="at_r2"]
+atlas = ExtResource("9_char")
+region = Rect2(256, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="player_frames"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_d0")
+}],
+"loop": false,
+"name": &"idle_down",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_u0")
+}],
+"loop": false,
+"name": &"idle_left",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_l0")
+}],
+"loop": false,
+"name": &"idle_right",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_r0")
+}],
+"loop": false,
+"name": &"idle_up",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_d0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_d1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_d2")
+}],
+"loop": true,
+"name": &"walk_down",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_u0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_u1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_u2")
+}],
+"loop": true,
+"name": &"walk_left",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_l0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_l1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_l2")
+}],
+"loop": true,
+"name": &"walk_right",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_r0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_r1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_r2")
+}],
+"loop": true,
+"name": &"walk_up",
+"speed": 8.0
+}]
+
+[node name="World" type="Node2D" unique_id=749300735]
 y_sort_enabled = true
 script = ExtResource("1_wg")
 
-[node name="DayNight" type="Node" parent="."]
+[node name="DayNight" type="Node" parent="." unique_id=640819371]
 script = ExtResource("11_dn")
 
-[node name="CanvasModulate" type="CanvasModulate" parent="."]
-color = Color(1, 1, 1, 1)
+[node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=1765813479]
 
-[node name="WorldMap" type="Node2D" parent="."]
+[node name="WorldMap" type="Node2D" parent="." unique_id=1407359974]
 script = ExtResource("3_wm")
 
-[node name="Shop" type="Sprite2D" parent="."]
+[node name="Shop" type="Sprite2D" parent="." unique_id=114098068]
 position = Vector2(304, 96)
 texture = ExtResource("6_shop")
 
-[node name="Shadow" type="Sprite2D" parent="Shop"]
+[node name="Shadow" type="Sprite2D" parent="Shop" unique_id=1387174674]
 z_index = -1
-position = Vector2(0, 57)
-scale = Vector2(4.375, 1.5)
+position = Vector2(-8.999997, 57)
+scale = Vector2(4.9375, 1.5)
 texture = ExtResource("12_shadow")
 
-[node name="ShopBody" type="StaticBody2D" parent="."]
+[node name="ShopBody" type="StaticBody2D" parent="." unique_id=1256760860]
 position = Vector2(304, 104)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ShopBody"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ShopBody" unique_id=1277656021]
 shape = SubResource("shape_shop")
 
-[node name="Lamp" type="Sprite2D" parent="."]
+[node name="Lamp" type="Sprite2D" parent="." unique_id=1063108605]
 position = Vector2(162, 224)
 texture = ExtResource("7_lamp")
 
-[node name="Shadow" type="Sprite2D" parent="Lamp"]
+[node name="Shadow" type="Sprite2D" parent="Lamp" unique_id=813798956]
 z_index = -1
-position = Vector2(0, 25)
-scale = Vector2(0.5625, 0.5)
+position = Vector2(0.5000019, 25)
+scale = Vector2(0.5937499, 0.5)
 texture = ExtResource("12_shadow")
 
-[node name="LampBody" type="StaticBody2D" parent="."]
+[node name="LampBody" type="StaticBody2D" parent="." unique_id=2119480557]
 position = Vector2(162, 224)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LampBody"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LampBody" unique_id=274272551]
 shape = SubResource("shape_lamp")
 
-[node name="Sign" type="Sprite2D" parent="."]
+[node name="Sign" type="Sprite2D" parent="." unique_id=1862487814]
 position = Vector2(401, 147)
 texture = ExtResource("8_sign")
 
-[node name="Shadow" type="Sprite2D" parent="Sign"]
+[node name="Shadow" type="Sprite2D" parent="Sign" unique_id=744971564]
 z_index = -1
-position = Vector2(0, 19)
-scale = Vector2(1.3125, 0.875)
+position = Vector2(-0.905, 28.77)
+scale = Vector2(1.917, 0.806)
 texture = ExtResource("12_shadow")
 
-[node name="SignBody" type="StaticBody2D" parent="."]
+[node name="SignBody" type="StaticBody2D" parent="." unique_id=649942441]
 position = Vector2(401, 147)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SignBody"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SignBody" unique_id=281671095]
 shape = SubResource("shape_sign")
 
-[node name="Player" type="CharacterBody2D" parent="."]
+[node name="Player" type="CharacterBody2D" parent="." unique_id=258169910]
 position = Vector2(288, 280)
 script = ExtResource("2_pl")
 
-[node name="Shadow" type="Sprite2D" parent="Player"]
-position = Vector2(0, 13)
+[node name="Shadow" type="Sprite2D" parent="Player" unique_id=1914128501]
+position = Vector2(0, 15)
 scale = Vector2(0.4375, 0.4375)
 texture = ExtResource("12_shadow")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player" unique_id=2017016289]
 shape = SubResource("shape_player")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player" unique_id=819382367]
 sprite_frames = SubResource("player_frames")
 animation = &"idle_down"
 
-[node name="Camera2D" type="Camera2D" parent="Player"]
+[node name="Camera2D" type="Camera2D" parent="Player" unique_id=399842438]
 zoom = Vector2(2, 2)
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1474986562]
 script = ExtResource("4_hud")
 
-[node name="MoneyLabel" type="Label" parent="HUD"]
-anchors_preset = 1
+[node name="MoneyLabel" type="Label" parent="HUD" unique_id=69376854]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 200.0
 offset_bottom = 28.0
 text = "$ 100"
 
-[node name="InvLabel" type="Label" parent="HUD"]
+[node name="InvLabel" type="Label" parent="HUD" unique_id=1335732853]
 offset_left = 8.0
 offset_top = 28.0
 offset_right = 300.0
 offset_bottom = 48.0
-text = ""
 
-[node name="CropLabel" type="Label" parent="HUD"]
+[node name="CropLabel" type="Label" parent="HUD" unique_id=125741665]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -208,7 +269,8 @@ offset_right = 200.0
 offset_bottom = -8.0
 text = "Cultura: lumifruit"
 
-[node name="MsgLabel" type="Label" parent="HUD"]
+[node name="MsgLabel" type="Label" parent="HUD" unique_id=1514617951]
+visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -219,20 +281,20 @@ offset_top = -20.0
 offset_right = 150.0
 offset_bottom = 20.0
 horizontal_alignment = 1
-visible = false
 
-[node name="ClockLabel" type="Label" parent="HUD"]
-anchors_preset = 3
+[node name="ClockLabel" type="Label" parent="HUD" unique_id=886084980]
+anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -120.0
 offset_top = 8.0
 offset_right = -8.0
 offset_bottom = 28.0
-horizontal_alignment = 2
 text = "☀ 06:00"
+horizontal_alignment = 2
 
-[node name="TunnelLabel" type="Label" parent="HUD"]
+[node name="TunnelLabel" type="Label" parent="HUD" unique_id=817119740]
+visible = false
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -240,11 +302,10 @@ offset_left = -300.0
 offset_top = 8.0
 offset_right = 300.0
 offset_bottom = 22.0
-horizontal_alignment = 1
-visible = false
 theme_override_font_sizes/font_size = 10
+horizontal_alignment = 1
 
-[node name="ShopPanel" type="PanelContainer" parent="HUD"]
+[node name="ShopPanel" type="PanelContainer" parent="HUD" unique_id=1998739527]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
@@ -257,16 +318,20 @@ offset_right = 140.0
 offset_bottom = 120.0
 script = ExtResource("10_shop")
 
-[node name="VBox" type="VBoxContainer" parent="HUD/ShopPanel"]
+[node name="VBox" type="VBoxContainer" parent="HUD/ShopPanel" unique_id=1234505844]
 layout_mode = 2
 
-[node name="MsgLabel" type="Label" parent="HUD/ShopPanel/VBox"]
+[node name="MsgLabel" type="Label" parent="HUD/ShopPanel/VBox" unique_id=1515153624]
 layout_mode = 2
 text = "Loja"
 horizontal_alignment = 1
 
-[node name="VirtualControls" type="Control" parent="HUD"]
+[node name="VirtualControls" type="Control" parent="HUD" unique_id=2033333604]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("5_vc")

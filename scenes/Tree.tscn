@@ -1,25 +1,25 @@
-[gd_scene load_steps=4 format=3 uid="uid://tree001"]
+[gd_scene format=3 uid="uid://tree001"]
 
-[ext_resource type="Script" path="res://scripts/Tree.gd" id="1_tree"]
-[ext_resource type="Texture2D" path="res://assets/environment/shadow_blob.png" id="2_shadow"]
+[ext_resource type="Script" uid="uid://brclmrij3wwvi" path="res://scripts/Tree.gd" id="1_tree"]
+[ext_resource type="Texture2D" uid="uid://bfe3vc4iy7o7s" path="res://assets/environment/shadow_blob.png" id="2_shadow"]
 
 [sub_resource type="RectangleShape2D" id="trunk_shape"]
 size = Vector2(22, 16)
 
-[node name="Tree" type="Node2D"]
+[node name="Tree" type="Node2D" unique_id=1739432794]
 script = ExtResource("1_tree")
 
-[node name="Shadow" type="Sprite2D" parent="."]
+[node name="Shadow" type="Sprite2D" parent="." unique_id=2131064047]
 z_index = -1
-position = Vector2(0, -2)
-scale = Vector2(0.75, 0.6875)
+position = Vector2(-1.6249994, -4.1250005)
+scale = Vector2(0.83593756, 0.85937494)
 texture = ExtResource("2_shadow")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1455445512]
 offset = Vector2(0, -31)
 
-[node name="TrunkBody" type="StaticBody2D" parent="."]
+[node name="TrunkBody" type="StaticBody2D" parent="." unique_id=671978857]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="TrunkBody"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TrunkBody" unique_id=34154551]
 position = Vector2(0, -11)
 shape = SubResource("trunk_shape")
