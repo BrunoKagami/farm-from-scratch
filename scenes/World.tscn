@@ -147,11 +147,9 @@ position = Vector2(288, 280)
 script = ExtResource("2_pl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-position = Vector2(-13, 0)
 shape = SubResource("shape_player")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player"]
-position = Vector2(-13, 0)
 sprite_frames = SubResource("player_frames")
 animation = &"idle_down"
 

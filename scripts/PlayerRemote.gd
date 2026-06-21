@@ -14,9 +14,6 @@ func _process(delta: float) -> void:
 
 func _ready() -> void:
 	_anim = AnimatedSprite2D.new()
-	# Mesmo offset do AnimatedSprite2D do $Player local (World.tscn), senão
-	# duas posições idênticas renderizam com os sprites desalinhados entre si.
-	_anim.position = Vector2(-13, 0)
 	_anim.sprite_frames = _build_frames()
 	_anim.animation = &"idle_down"
 	_anim.play()

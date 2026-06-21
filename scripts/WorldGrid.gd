@@ -97,7 +97,6 @@ func _spawn_remote_body(peer_id: int) -> void:
 	body.collision_layer = 2
 	body.collision_mask = 1
 	var shape := CollisionShape2D.new()
-	shape.position = Vector2(-13, 0)
 	var rect := RectangleShape2D.new()
 	rect.size = Vector2(14, 14)
 	shape.shape = rect
