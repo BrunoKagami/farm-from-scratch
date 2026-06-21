@@ -9,8 +9,10 @@ signal connection_failed
 signal connected_to_server
 
 var players: Dictionary = {}
+var is_dedicated := false
 
 func _ready() -> void:
+	is_dedicated = DisplayServer.get_name() == "headless"
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -28,7 +30,8 @@ func host() -> void:
 		push_error("Failed to create server: %d" % err)
 		return
 	multiplayer.multiplayer_peer = peer
-	players[1] = { "id": 1 }
+	if not is_dedicated:
+		players[1] = { "id": 1 }
 
 func join(address: String) -> void:
 	var url := _build_url(address)

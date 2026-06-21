@@ -8,6 +8,9 @@ var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
 func _ready() -> void:
 	_build_grid()
+	if DisplayServer.get_name() == "headless":
+		var local_player := get_node_or_null("Player")
+		if local_player: local_player.queue_free()
 	var nm := get_node_or_null("/root/NetworkManager")
 	if nm:
 		nm.player_connected.connect(_on_player_connected)

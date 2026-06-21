@@ -22,6 +22,9 @@ func _ready() -> void:
 		ip_input.gui_input.connect(_on_input_field_clicked)
 		ip_input.placeholder_text = "Toque aqui para colar o link"
 
+	if DisplayServer.get_name() == "headless":
+		_on_host.call_deferred()
+
 func _process(_delta: float) -> void:
 	if not _waiting_for_input:
 		return
