@@ -28,7 +28,21 @@ func _ready() -> void:
 	debug_pos_label.offset_top = -52
 	debug_pos_label.offset_right = 400
 	debug_pos_label.offset_bottom = -28
+	debug_pos_label.visible = false
 	add_child(debug_pos_label)
+
+	var debug_btn := Button.new()
+	debug_btn.name = "DebugToggleBtn"
+	debug_btn.text = "debug"
+	debug_btn.anchor_left = 1.0
+	debug_btn.anchor_right = 1.0
+	debug_btn.offset_left = -64
+	debug_btn.offset_right = -8
+	debug_btn.offset_top = 32
+	debug_btn.offset_bottom = 58
+	debug_btn.modulate.a = 0.6
+	debug_btn.pressed.connect(func(): debug_pos_label.visible = not debug_pos_label.visible)
+	add_child(debug_btn)
 
 func update_debug_positions(text: String) -> void:
 	debug_pos_label.text = text
