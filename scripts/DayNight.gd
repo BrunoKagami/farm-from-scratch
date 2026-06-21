@@ -85,7 +85,7 @@ func _update_light() -> void:
 		# lâmpada acende — acompanha o amanhecer/anoitecer automaticamente,
 		# sem precisar de um segundo conjunto de horários pra manter.
 		var luminance := (sky.r + sky.g + sky.b) / 3.0
-		_lamp_light.set_intensity(clamp((1.0 - luminance) * 2.2, 0.0, 1.4))
+		_lamp_light.set_intensity(clamp((1.0 - luminance) * 1.8, 0.0, 1.0))
 
 func _angular_diff(a: float, b: float) -> float:
 	var d := b - a
