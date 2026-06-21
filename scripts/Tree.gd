@@ -29,6 +29,13 @@ func _ready() -> void:
 	body.add_child(shape)
 	add_child(body)
 
+	var shadow := Node2D.new()
+	shadow.set_script(load("res://scripts/Shadow.gd"))
+	shadow.width = 24.0
+	shadow.height = 11.0
+	shadow.position = Vector2(0, -2)
+	add_child(shadow)
+
 func _build_frames() -> SpriteFrames:
 	var tex: Texture2D = load("res://assets/environment/Arvore-Sheet.png")
 	var sf := SpriteFrames.new()

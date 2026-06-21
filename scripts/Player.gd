@@ -13,18 +13,6 @@ var _suppress_correction_until_msec := 0
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
-# Forma que bloqueia luz na altura dos pés — é o que faz a lâmpada/sol
-# projetarem sombra de verdade do personagem (sistema nativo do Godot).
-static func _build_shadow_occluder() -> LightOccluder2D:
-	var occluder := LightOccluder2D.new()
-	var poly := OccluderPolygon2D.new()
-	poly.polygon = PackedVector2Array([
-		Vector2(-6, 9), Vector2(6, 9), Vector2(6, 15), Vector2(-6, 15),
-	])
-	poly.closed = true
-	occluder.occluder = poly
-	return occluder
-
 func _ready() -> void:
 	# Jogadores nunca colidiam entre si antes (PlayerRemote era só visual,
 	# sem física). Os corpos autoritativos no servidor agora são CharacterBody2D
@@ -33,7 +21,13 @@ func _ready() -> void:
 	# cliente (que nunca trata outro jogador como obstáculo).
 	collision_layer = 2
 	collision_mask = 1
-	add_child(_build_shadow_occluder())
+
+	var shadow := Node2D.new()
+	shadow.set_script(load("res://scripts/Shadow.gd"))
+	shadow.width = 14.0
+	shadow.height = 7.0
+	shadow.position = Vector2(0, 13)
+	add_child(shadow)
 
 func _physics_process(_delta: float) -> void:
 	var direction := Vector2(
