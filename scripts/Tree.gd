@@ -3,10 +3,19 @@ extends Node2D
 var _anim: AnimatedSprite2D
 var chopped := false
 
+# Distância entre o centro do frame (64x64, ponto de origem padrão do
+# AnimatedSprite2D) e a base do tronco (pixel mais baixo da árvore = 63,
+# centro = 32). O nó em si fica posicionado NA BASE (ver WorldGrid
+# ._build_trees) — isso aqui só compensa visual/colisão para que nada
+# se mova na tela, mantendo o Y-sort correto (a base é o ponto certo
+# pra decidir quem desenha na frente, não o centro da copa).
+const _BASE_OFFSET := 31.0
+
 func _ready() -> void:
 	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = _build_frames()
 	_anim.animation = &"sway"
+	_anim.offset = Vector2(0, -_BASE_OFFSET)
 	_anim.play()
 	add_child(_anim)
 
@@ -16,7 +25,7 @@ func _ready() -> void:
 	var rect := RectangleShape2D.new()
 	rect.size = Vector2(16, 14)
 	shape.shape = rect
-	shape.position = Vector2(0, 20)
+	shape.position = Vector2(0, 20 - _BASE_OFFSET)
 	body.add_child(shape)
 	add_child(body)
 

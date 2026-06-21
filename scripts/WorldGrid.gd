@@ -87,7 +87,10 @@ func _build_trees() -> void:
 	for i in GameData.TREE_SPAWN_POSITIONS.size():
 		var tree := Node2D.new()
 		tree.set_script(_tree_scene)
-		tree.position = GameData.TREE_SPAWN_POSITIONS[i]
+		# Posiciona o nó na base do tronco (não no centro da copa), pra o
+		# Y-sort comparar a árvore com o jogador no ponto certo. Tree.gd
+		# compensa offset/colisão pra nada mudar visualmente na tela.
+		tree.position = GameData.TREE_SPAWN_POSITIONS[i] + Vector2(0, 31)
 		tree.name = "Tree_%d" % i
 		add_child(tree)
 		trees[i] = tree
