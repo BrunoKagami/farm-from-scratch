@@ -23,7 +23,7 @@ func _ready() -> void:
 	var body := StaticBody2D.new()
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(16, 14)
+	rect.size = Vector2(22, 16)
 	shape.shape = rect
 	shape.position = Vector2(0, 20 - _BASE_OFFSET)
 	body.add_child(shape)

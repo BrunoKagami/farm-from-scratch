@@ -17,8 +17,14 @@ const SEED_COSTS  := { "lumifruit_seed": 5,  "voidroot_seed": 10, "starbloom_see
 const SELL_PRICES := { "lumifruit": 20, "voidroot": 45, "starbloom": 80, "wood": 8 }
 
 # Árvores: posições fixas no gramado, longe da roça/loja/luminária/placa.
+# As 5 próximas a (64,64) são só pra ver o efeito visual de várias juntas.
 const TREE_SPAWN_POSITIONS := [
 	Vector2(64, 64),
+	Vector2(112, 64),
+	Vector2(64, 112),
+	Vector2(112, 116),
+	Vector2(40, 144),
+	Vector2(140, 92),
 	Vector2(560, 64),
 	Vector2(64, 560),
 	Vector2(560, 560),
