@@ -7,6 +7,16 @@ const SPEED := GameData.PLAYER_SPEED
 const SNAP_THRESHOLD := 32.0
 const RECONCILE_LERP  := 0.3
 
+# --- Máquina de estados de animação/ação ---
+# Cada estado tem um único ponto de entrada (_enter_state) que decide
+# offset/animação. Sem isso, cada ação nova (golpe, regar, pescar...)
+# acabava virando mais uma flag solta brigando pelas mesmas variáveis.
+enum State { IDLE, WALK, CHOP }
+var _state: State = State.IDLE
+# Usado por estados com duração fixa (CHOP) pra saber quando voltar
+# a aceitar mudança de movimento/estado.
+var _state_locked_until_msec := 0
+
 var selected_crop: String = "lumifruit"
 var _last_dir := "down"
 var _suppress_correction_until_msec := 0
@@ -17,7 +27,6 @@ var _suppress_correction_until_msec := 0
 # tocar, senão o personagem "salta" pra cima enquanto golpeia.
 const CHOP_OFFSET := Vector2(0, -4)
 const CHOP_DURATION := 0.5
-var _chopping_until_msec := 0
 
 # Machado: item fixo do jogador, não-contável e não-desgastável (não mora
 # no Inventory, não some/baixa quantidade) — é só mais uma opção no ciclo
@@ -63,11 +72,43 @@ func _physics_process(_delta: float) -> void:
 	# isto aqui é só o palpite local até a correção chegar.
 	velocity = direction * SPEED
 	move_and_slide()
-	_update_anim(direction)
+	_update_state(direction)
 
 	var world_grid := get_node_or_null("/root/World")
 	if world_grid and world_grid.has_method("report_movement"):
 		world_grid.report_movement(direction, global_position, velocity)
+
+# Decide se devemos trocar de estado (IDLE/WALK) com base no movimento.
+# Estados com duração fixa (CHOP) ignoram isso até o tempo deles passar.
+func _update_state(dir: Vector2) -> void:
+	if _state == State.CHOP and Time.get_ticks_msec() < _state_locked_until_msec:
+		return
+
+	if dir != Vector2.ZERO:
+		if abs(dir.x) >= abs(dir.y):
+			_last_dir = "right" if dir.x > 0 else "left"
+		else:
+			_last_dir = "down" if dir.y > 0 else "up"
+
+	var desired: State = State.WALK if dir != Vector2.ZERO else State.IDLE
+	if desired != _state:
+		_enter_state(desired)
+
+# Único lugar que toca animação/offset — cada estado configura o que
+# precisa e, se tiver duração fixa, marca quando expira.
+func _enter_state(new_state: State) -> void:
+	_state = new_state
+	match new_state:
+		State.IDLE:
+			_anim.offset = Vector2.ZERO
+			_anim.play("idle_" + _last_dir)
+		State.WALK:
+			_anim.offset = Vector2.ZERO
+			_anim.play("walk_" + _last_dir)
+		State.CHOP:
+			_anim.offset = CHOP_OFFSET
+			_anim.play("chop_down")
+			_state_locked_until_msec = Time.get_ticks_msec() + int(CHOP_DURATION * 1000)
 
 # Chamado pelo servidor (via WorldGrid) quando a posição autoritativa diverge
 # da nossa previsão local.
@@ -148,7 +189,7 @@ func _try_interact() -> void:
 # O sensor fica na direção que o personagem está olhando (_last_dir), não
 # num raio ao redor dele — não corta o que está atrás.
 func _try_chop() -> void:
-	_play_chop_feedback()
+	_enter_state(State.CHOP)
 	var world_grid := get_node_or_null("/root/World")
 	if world_grid == null or not world_grid.has_method("get_near_tree"):
 		return
@@ -159,33 +200,10 @@ func _try_chop() -> void:
 		_hud_msg("Cortando árvore...")
 		world_grid.request_chop_tree(tree_id)
 
-func _play_chop_feedback() -> void:
-	if _anim == null:
-		return
-	_anim.offset = CHOP_OFFSET
-	_anim.animation = &"chop_down"
-	_anim.play()
-	_chopping_until_msec = Time.get_ticks_msec() + int(CHOP_DURATION * 1000)
-
 func _hud_msg(text: String) -> void:
 	var hud := get_node_or_null("/root/World/HUD")
 	if hud and hud.has_method("show_msg"):
 		hud.show_msg(text)
-
-func _update_anim(dir: Vector2) -> void:
-	if _anim == null:
-		return
-	if Time.get_ticks_msec() < _chopping_until_msec:
-		return
-	_anim.offset = Vector2.ZERO
-	if dir == Vector2.ZERO:
-		_anim.play("idle_" + _last_dir)
-		return
-	if abs(dir.x) >= abs(dir.y):
-		_last_dir = "right" if dir.x > 0 else "left"
-	else:
-		_last_dir = "down" if dir.y > 0 else "up"
-	_anim.play("walk_" + _last_dir)
 
 func _cycle_crop() -> void:
 	var crops := ["lumifruit", "voidroot", "starbloom", "axe"]
