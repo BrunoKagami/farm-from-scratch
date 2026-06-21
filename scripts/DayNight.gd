@@ -9,7 +9,6 @@ var time_of_day := 0.25
 var _sync_timer := 0.0
 var _target_time := -1.0
 var _lamp_light: PointLight2D
-var _sun_light: DirectionalLight2D
 
 # Pontos de cor ao longo do dia (time_of_day 0.0–1.0 = 00:00–24:00)
 const SKY := [
@@ -32,18 +31,6 @@ func _ready() -> void:
 		_lamp_light.set_script(load("res://scripts/LampLight.gd"))
 		_lamp_light.position = Vector2(0, -26)
 		lamp.add_child(_lamp_light)
-
-	var world := get_node_or_null("/root/World")
-	if world:
-		# "Sol" simbólico: só serve pra dar uma direção consistente de
-		# sombra durante o dia. DirectionalLight2D não tem posição que
-		# importe, só o ângulo — luz "infinita" igual o sol de verdade.
-		_sun_light = DirectionalLight2D.new()
-		_sun_light.color = Color(1.0, 0.97, 0.9)
-		_sun_light.energy = 0.0
-		_sun_light.rotation_degrees = 50.0
-		_sun_light.shadow_enabled = true
-		world.add_child.call_deferred(_sun_light)
 
 func _process(delta: float) -> void:
 	if multiplayer.is_server():
@@ -93,16 +80,12 @@ func _update_light() -> void:
 	var cm := get_node_or_null("/root/World/CanvasModulate")
 	if cm:
 		cm.color = sky
-	var luminance := (sky.r + sky.g + sky.b) / 3.0
 	if _lamp_light:
 		# Reaproveita a própria cor do céu: quanto mais escuro, mais a
 		# lâmpada acende — acompanha o amanhecer/anoitecer automaticamente,
 		# sem precisar de um segundo conjunto de horários pra manter.
+		var luminance := (sky.r + sky.g + sky.b) / 3.0
 		_lamp_light.set_intensity(clamp((1.0 - luminance) * 1.8, 0.0, 1.0))
-	if _sun_light:
-		# O oposto da lâmpada: forte de dia, some de noite — pra sombra
-		# trocar de fonte (sol → lâmpada) suavemente na transição.
-		_sun_light.energy = clamp((luminance - 0.5) * 1.6, 0.0, 1.0)
 
 func _angular_diff(a: float, b: float) -> float:
 	var d := b - a
