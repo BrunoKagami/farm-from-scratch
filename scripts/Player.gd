@@ -9,6 +9,7 @@ const RECONCILE_LERP  := 0.3
 
 var selected_crop: String = "lumifruit"
 var _last_dir := "down"
+var _suppress_correction_until_msec := 0
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -42,10 +43,18 @@ func _physics_process(_delta: float) -> void:
 func server_correct(server_pos: Vector2, _server_vel: Vector2) -> void:
 	if multiplayer.is_server():
 		return
+	if Time.get_ticks_msec() < _suppress_correction_until_msec:
+		return
 	if global_position.distance_to(server_pos) > SNAP_THRESHOLD:
 		global_position = server_pos
 	else:
 		global_position = global_position.lerp(server_pos, RECONCILE_LERP)
+
+# Logo após reconectar, o corpo novo do servidor nasce no spawn padrão até
+# a mensagem _resume_at chegar — ignora correções por um instante pra não
+# saltar pro spawn e voltar.
+func suppress_correction(seconds: float) -> void:
+	_suppress_correction_until_msec = Time.get_ticks_msec() + int(seconds * 1000)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):

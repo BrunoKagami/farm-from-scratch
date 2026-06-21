@@ -48,6 +48,25 @@ func _on_reconnected() -> void:
 	if not multiplayer.is_server() and \
 	   not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
 		rpc_id(1, "request_full_state")
+		# Reconectar nos dá um peer id novo pro servidor, que não tem
+		# memória de onde estávamos — o corpo dele nasce no spawn padrão.
+		# Avisamos a posição real assim que possível pra ele não nos puxar
+		# de volta pro spawn, e damos um respiro pra correção até essa
+		# mensagem chegar (senão dá um pulo pro spawn e depois de volta).
+		var local_player := get_node_or_null("Player")
+		if local_player:
+			rpc_id(1, "_resume_at", local_player.global_position)
+			if local_player.has_method("suppress_correction"):
+				local_player.suppress_correction(1.0)
+
+@rpc("any_peer", "reliable")
+func _resume_at(pos: Vector2) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0 or not remote_bodies.has(sender):
+		return
+	remote_bodies[sender].global_position = pos
 
 func _build_grid() -> void:
 	var farm := GameData.FARM_RECT
