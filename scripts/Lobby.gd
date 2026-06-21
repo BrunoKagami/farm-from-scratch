@@ -21,6 +21,8 @@ func _ready() -> void:
 	nm.connected_to_server.connect(_on_connected)
 	nm.connection_failed.connect(_on_failed)
 	nm.player_connected.connect(_on_player_connected)
+	nm.name_accepted.connect(_start_game)
+	nm.name_rejected.connect(_on_name_rejected)
 
 	ip_input.text = DEFAULT_SERVER_URL
 
@@ -110,11 +112,15 @@ func _player_name() -> String:
 
 func _on_host() -> void:
 	var nm := get_node("/root/NetworkManager")
-	nm.player_name = _player_name()
 	nm.host()
 	join_btn.disabled = true
 	host_btn.disabled = true
-	_start_game()
+	if DisplayServer.get_name() == "headless":
+		# Servidor dedicado não tem $Player — não precisa (nem deve) reservar nome.
+		_start_game()
+	else:
+		status_label.text = "Confirmando..."
+		nm.register_name(_player_name())
 
 func _on_join() -> void:
 	var addr := ip_input.text.strip_edges()
@@ -124,15 +130,23 @@ func _on_join() -> void:
 	if addr.is_empty():
 		addr = "127.0.0.1"
 	var nm := get_node("/root/NetworkManager")
-	nm.player_name = _player_name()
 	nm.join(addr)
 	status_label.text = "Conectando a\n%s…" % nm._build_url(addr)
 	host_btn.disabled = true
 	join_btn.disabled = true
 
 func _on_connected() -> void:
-	status_label.text = "Conectado!"
-	_start_game()
+	# Conexão de rede estabelecida, mas só entramos no jogo depois que o
+	# servidor confirmar que o nome não está em uso (name_accepted/_rejected).
+	status_label.text = "Confirmando nome..."
+	var nm := get_node("/root/NetworkManager")
+	nm.register_name(_player_name())
+
+func _on_name_rejected(_reason: String) -> void:
+	status_label.text = get_node("/root/NetworkManager").last_error
+	get_node("/root/NetworkManager").last_error = ""
+	host_btn.disabled = false
+	join_btn.disabled = false
 
 func _on_failed() -> void:
 	status_label.text = "Falha ao conectar. Verifique o link."

@@ -9,6 +9,8 @@ signal connection_failed
 signal connected_to_server
 signal reconnecting(attempt: int)
 signal reconnect_failed
+signal name_accepted
+signal name_rejected(reason: String)
 
 var players: Dictionary = {}
 var is_dedicated := false
@@ -16,6 +18,11 @@ var player_name := ""
 # Mensagem pra Lobby mostrar na próxima vez que _ready() rodar (ex: nome
 # já em uso em outra sessão). Lobby limpa depois de exibir.
 var last_error := ""
+
+# Identidade entre sessões: reservada AQUI (antes de entrar no World),
+# pra recusar nome duplicado sem nunca deixar a segunda sessão sequer ver
+# o jogo. Só usado/populado no servidor.
+var peer_names: Dictionary = {}
 
 # Reconexão automática: navegador mobile suspende a aba quando a tela
 # bloqueia, e o WebSocket morre de verdade nesse meio tempo (confirmado via
@@ -142,7 +149,50 @@ func _announce_player(existing_id: int) -> void:
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	players.erase(peer_id)
+	peer_names.erase(peer_id)
 	emit_signal("player_disconnected", peer_id)
+
+# Reserva o nome ANTES de entrar no World — se já tiver alguém conectado
+# com esse nome, a conexão é recusada e desfeita aqui mesmo, sem nunca
+# deixar a segunda sessão renderizar o jogo.
+func register_name(requested_name: String) -> void:
+	var clean := requested_name.strip_edges()
+	if clean.is_empty():
+		clean = "Jogador%d" % (randi() % 10000)
+	player_name = clean
+	if multiplayer.is_server():
+		_claim_name(clean)
+	else:
+		rpc_id(1, "_claim_name", clean)
+
+@rpc("any_peer", "reliable")
+func _claim_name(requested_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var peer_id := sender if sender != 0 else multiplayer.get_unique_id()
+	for existing_id in peer_names.keys():
+		if existing_id != peer_id and peer_names[existing_id] == requested_name:
+			if sender != 0:
+				rpc_id(sender, "_claim_rejected", requested_name)
+				if multiplayer.multiplayer_peer is WebSocketMultiplayerPeer:
+					multiplayer.multiplayer_peer.disconnect_peer(sender)
+			return
+	peer_names[peer_id] = requested_name
+	if sender != 0:
+		rpc_id(sender, "_claim_accepted")
+	else:
+		emit_signal("name_accepted")
+
+@rpc("authority", "reliable")
+func _claim_accepted() -> void:
+	emit_signal("name_accepted")
+
+@rpc("authority", "reliable")
+func _claim_rejected(requested_name: String) -> void:
+	last_error = "O nome \"%s\" já está em uso em outra sessão." % requested_name
+	disable_reconnect()
+	emit_signal("name_rejected", requested_name)
 
 func _on_connected_to_server() -> void:
 	_reconnecting = false
