@@ -7,6 +7,7 @@ func _ready() -> void:
 	# halo de luz local em volta do poste, não um clarão cobrindo a tela.
 	texture_scale = 0.6
 	energy = 0.0
+	shadow_enabled = true
 
 func _build_texture() -> GradientTexture2D:
 	var grad := Gradient.new()

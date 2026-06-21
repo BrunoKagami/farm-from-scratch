@@ -25,6 +25,19 @@ func _ready() -> void:
 	rng.seed = peer_id
 	_anim.modulate = Color.from_hsv(rng.randf(), 0.7, 1.0)
 	add_child(_anim)
+	add_child(_build_shadow_occluder())
+
+# Forma que bloqueia luz na altura dos pés — mesma da Player.gd, pra
+# jogadores remotos também projetarem sombra de verdade.
+func _build_shadow_occluder() -> LightOccluder2D:
+	var occluder := LightOccluder2D.new()
+	var poly := OccluderPolygon2D.new()
+	poly.polygon = PackedVector2Array([
+		Vector2(-6, 9), Vector2(6, 9), Vector2(6, 15), Vector2(-6, 15),
+	])
+	poly.closed = true
+	occluder.occluder = poly
+	return occluder
 
 func _build_frames() -> SpriteFrames:
 	var tex: Texture2D = load("res://assets/characters/personagem_Base-Sheet.png")
