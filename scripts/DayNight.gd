@@ -8,6 +8,7 @@ const LERP_SPEED       := 2.0
 var time_of_day := 0.25
 var _sync_timer := 0.0
 var _target_time := -1.0
+var _lamp_light: PointLight2D
 
 # Pontos de cor ao longo do dia (time_of_day 0.0–1.0 = 00:00–24:00)
 const SKY := [
@@ -22,6 +23,14 @@ const SKY := [
 	[0.875, Color(0.45, 0.45, 0.58)],  # 21:00 noite
 	[1.000, Color(0.45, 0.45, 0.58)],  # 24:00 meia-noite
 ]
+
+func _ready() -> void:
+	var lamp := get_node_or_null("/root/World/Lamp")
+	if lamp:
+		_lamp_light = PointLight2D.new()
+		_lamp_light.set_script(load("res://scripts/LampLight.gd"))
+		_lamp_light.position = Vector2(0, -26)
+		lamp.add_child(_lamp_light)
 
 func _process(delta: float) -> void:
 	if multiplayer.is_server():
@@ -67,9 +76,16 @@ func _sky_color() -> Color:
 	return SKY[0][1] as Color
 
 func _update_light() -> void:
+	var sky := _sky_color()
 	var cm := get_node_or_null("/root/World/CanvasModulate")
 	if cm:
-		cm.color = _sky_color()
+		cm.color = sky
+	if _lamp_light:
+		# Reaproveita a própria cor do céu: quanto mais escuro, mais a
+		# lâmpada acende — acompanha o amanhecer/anoitecer automaticamente,
+		# sem precisar de um segundo conjunto de horários pra manter.
+		var luminance := (sky.r + sky.g + sky.b) / 3.0
+		_lamp_light.set_intensity(clamp((1.0 - luminance) * 2.2, 0.0, 1.4))
 
 func _angular_diff(a: float, b: float) -> float:
 	var d := b - a
