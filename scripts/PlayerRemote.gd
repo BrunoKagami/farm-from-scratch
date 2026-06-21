@@ -4,6 +4,14 @@ var _anim: AnimatedSprite2D
 
 var peer_id: int = 0
 
+const LERP_SPEED := 12.0
+var _target_pos: Vector2 = Vector2.INF
+
+func _process(delta: float) -> void:
+	if _target_pos == Vector2.INF:
+		return
+	position = position.lerp(_target_pos, clamp(LERP_SPEED * delta, 0.0, 1.0))
+
 func _ready() -> void:
 	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = _build_frames()
@@ -41,7 +49,9 @@ func _build_frames() -> SpriteFrames:
 	return sf
 
 func update_state(pos: Vector2, vel: Vector2) -> void:
-	position = pos
+	if _target_pos == Vector2.INF:
+		position = pos
+	_target_pos = pos
 	if _anim == null:
 		return
 	if vel == Vector2.ZERO:

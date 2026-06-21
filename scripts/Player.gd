@@ -1,6 +1,10 @@
 extends CharacterBody2D
 
-const SPEED := 80.0
+const SPEED := GameData.PLAYER_SPEED
+# Quando o servidor corrige nossa posição, convergimos suavemente em vez de
+# saltar — só corrige de fato se a divergência for grande (lag/perda de pacote).
+const RECONCILE_THRESHOLD := 8.0
+const RECONCILE_LERP       := 0.3
 
 var selected_crop: String = "lumifruit"
 var _last_dir := "down"
@@ -15,13 +19,24 @@ func _physics_process(_delta: float) -> void:
 		Input.get_axis("ui_left", "ui_right"),
 		Input.get_axis("ui_up", "ui_down")
 	).normalized()
+	# Previsão local: move imediatamente para resposta instantânea ao input.
+	# Quem decide a posição "oficial" de todo mundo é sempre o servidor —
+	# isto aqui é só o palpite local até a correção chegar.
 	velocity = direction * SPEED
 	move_and_slide()
 	_update_anim(direction)
 
 	var world_grid := get_node_or_null("/root/World")
-	if world_grid and world_grid.has_method("send_player_state"):
-		world_grid.send_player_state(global_position, velocity)
+	if world_grid and world_grid.has_method("report_movement"):
+		world_grid.report_movement(direction, global_position, velocity)
+
+# Chamado pelo servidor (via WorldGrid) quando a posição autoritativa diverge
+# da nossa previsão local.
+func server_correct(server_pos: Vector2, _server_vel: Vector2) -> void:
+	if multiplayer.is_server():
+		return
+	if global_position.distance_to(server_pos) > RECONCILE_THRESHOLD:
+		global_position = global_position.lerp(server_pos, RECONCILE_LERP)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):

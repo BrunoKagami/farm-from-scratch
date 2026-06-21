@@ -4,6 +4,8 @@ const TILE_SIZE := 32
 const GRID_W    := 20
 const GRID_H    := 20
 const FARM_RECT := Rect2i(6, 6, 8, 8)
+const PLAYER_SPEED := 80.0
+const PLAYER_SPAWN := Vector2(288, 280)
 
 const CROPS := {
 	"lumifruit": { "color": Color(0.2, 0.85, 0.4),  "grow_time": 5.0,  "sell_price": 20, "seed_cost": 5  },

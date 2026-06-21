@@ -6,6 +6,14 @@ var tile_data: Dictionary = {}
 var remote_players: Dictionary = {}
 var _remote_scene := preload("res://scripts/PlayerRemote.gd")
 
+# --- Movimentação server-authoritative ---
+# Só populados/usados no servidor. peer_inputs guarda a última direção
+# recebida de cada cliente; remote_bodies guarda o corpo físico que o
+# servidor simula para representar cada cliente (exceto ele mesmo, que já
+# tem o nó $Player local fazendo isso diretamente).
+var peer_inputs: Dictionary = {}
+var remote_bodies: Dictionary = {}
+
 func _ready() -> void:
 	_build_grid()
 	if DisplayServer.get_name() == "headless":
@@ -41,6 +49,8 @@ func get_tile(grid_pos: Vector2i) -> Node2D:
 # --- Remote players ---
 
 func _on_player_connected(peer_id: int) -> void:
+	if multiplayer.is_server():
+		_spawn_remote_body(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		return
 	_spawn_remote_player(peer_id)
@@ -49,6 +59,10 @@ func _on_player_disconnected(peer_id: int) -> void:
 	if remote_players.has(peer_id):
 		remote_players[peer_id].queue_free()
 		remote_players.erase(peer_id)
+	if remote_bodies.has(peer_id):
+		remote_bodies[peer_id].queue_free()
+		remote_bodies.erase(peer_id)
+	peer_inputs.erase(peer_id)
 
 func _spawn_remote_player(peer_id: int) -> void:
 	if remote_players.has(peer_id):
@@ -56,10 +70,37 @@ func _spawn_remote_player(peer_id: int) -> void:
 	var node: Node2D = Node2D.new()
 	node.set_script(_remote_scene)
 	node.name = "RemotePlayer_%d" % peer_id
-	node.position = Vector2(288, 280)
+	node.position = GameData.PLAYER_SPAWN
 	node.set("peer_id", peer_id)
 	add_child(node)
 	remote_players[peer_id] = node
+
+# O servidor simula fisicamente cada cliente remoto com um corpo próprio
+# (a si mesmo ele já simula via $Player diretamente, sem indireção).
+func _spawn_remote_body(peer_id: int) -> void:
+	if peer_id == multiplayer.get_unique_id() or remote_bodies.has(peer_id):
+		return
+	var body := CharacterBody2D.new()
+	body.name = "ServerBody_%d" % peer_id
+	body.position = GameData.PLAYER_SPAWN
+	var shape := CollisionShape2D.new()
+	shape.position = Vector2(-13, 0)
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(14, 14)
+	shape.shape = rect
+	body.add_child(shape)
+	add_child(body)
+	remote_bodies[peer_id] = body
+
+func _physics_process(_delta: float) -> void:
+	if not multiplayer.is_server():
+		return
+	for peer_id in remote_bodies.keys():
+		var body: CharacterBody2D = remote_bodies[peer_id]
+		var direction: Vector2 = peer_inputs.get(peer_id, Vector2.ZERO)
+		body.velocity = direction * GameData.PLAYER_SPEED
+		body.move_and_slide()
+		rpc("_apply_authoritative_state", peer_id, body.global_position, body.velocity)
 
 @rpc("any_peer", "reliable")
 func request_full_state() -> void:
@@ -97,30 +138,38 @@ func _process(delta: float) -> void:
 				td["timer"] = min(td["timer"] + delta, td["duration"] - 0.01)
 				_sync_tile_visual(pos)
 
-# --- Player position sync ---
+# --- Movimentação server-authoritative ---
+# Cliente nunca declara sua própria posição final: ou ele É o servidor (e
+# então já É autoridade), ou ele só manda a intenção (direção) e aceita o
+# que o servidor decidir.
 
-func send_player_state(pos: Vector2, vel: Vector2) -> void:
-	if not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
-		rpc("_sync_player", multiplayer.get_unique_id(), pos, vel)
-
-# Fix 2: valida que o remetente é quem diz ser
-@rpc("any_peer", "unreliable")
-func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
-	var sender := multiplayer.get_remote_sender_id()
-	# sender == 0 significa chamada local (host)
-	if sender != 0 and sender != peer_id:
+func report_movement(direction: Vector2, pos: Vector2, vel: Vector2) -> void:
+	if multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		return
-	if remote_players.has(peer_id):
+	if multiplayer.is_server():
+		rpc("_apply_authoritative_state", multiplayer.get_unique_id(), pos, vel)
+	else:
+		rpc_id(1, "_receive_input", direction)
+
+@rpc("any_peer", "unreliable")
+func _receive_input(direction: Vector2) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0:
+		return
+	peer_inputs[sender] = direction.limit_length(1.0)
+
+@rpc("authority", "unreliable")
+func _apply_authoritative_state(peer_id: int, pos: Vector2, vel: Vector2) -> void:
+	if multiplayer.is_server():
+		return
+	if peer_id == multiplayer.get_unique_id():
+		var local_player := get_node_or_null("Player")
+		if local_player and local_player.has_method("server_correct"):
+			local_player.server_correct(pos, vel)
+	elif remote_players.has(peer_id):
 		remote_players[peer_id].update_state(pos, vel)
-	# Topologia cliente-servidor: um cliente só alcança o servidor
-	# diretamente. O servidor precisa repassar a posição recebida para
-	# os demais clientes, senão eles nunca se veem mover.
-	if multiplayer.is_server() and sender != 0:
-		var nm := get_node_or_null("/root/NetworkManager")
-		if nm:
-			for pid in nm.players.keys():
-				if pid != peer_id and pid != multiplayer.get_unique_id():
-					rpc_id(pid, "_sync_player", peer_id, pos, vel)
 
 # --- Plant / Harvest ---
 
