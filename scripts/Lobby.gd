@@ -24,6 +24,10 @@ func _ready() -> void:
 
 	ip_input.text = DEFAULT_SERVER_URL
 
+	if not nm.last_error.is_empty():
+		status_label.text = nm.last_error
+		nm.last_error = ""
+
 	if _on_web:
 		# No navegador mobile, tocar num LineEdit do Godot não abre o
 		# teclado nativo de forma confiável — usamos um <input> HTML real

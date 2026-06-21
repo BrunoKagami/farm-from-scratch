@@ -285,6 +285,16 @@ func _register_name(player_name: String) -> void:
 	var clean: String = player_name.strip_edges()
 	if clean.is_empty():
 		clean = "Jogador%d" % peer_id
+	# Impede duas conexões simultâneas com o mesmo nome — sem isso, os dois
+	# peers ficam pisando no mesmo save/player_state em paralelo.
+	for existing_id in peer_names.keys():
+		if existing_id != peer_id and peer_names[existing_id] == clean:
+			if sender != 0:
+				rpc_id(sender, "_name_rejected", clean)
+				var peer := multiplayer.multiplayer_peer
+				if peer is WebSocketMultiplayerPeer:
+					peer.disconnect_peer(sender)
+			return
 	peer_names[peer_id] = clean
 	var saved := SaveManager.load_player(clean)
 	if saved.is_empty():
@@ -301,6 +311,16 @@ func _register_name(player_name: String) -> void:
 			var p: Array = saved["pos"]
 			_set_player_position(peer_id, Vector2(p[0], p[1]))
 	_push_economy_state(peer_id)
+
+@rpc("authority", "reliable")
+func _name_rejected(player_name: String) -> void:
+	if multiplayer.is_server():
+		return
+	var nm := get_node_or_null("/root/NetworkManager")
+	if nm:
+		nm.disable_reconnect()
+		nm.last_error = "O nome \"%s\" já está em uso em outra sessão." % player_name
+	get_tree().change_scene_to_file("res://scenes/Lobby.tscn")
 
 func _set_player_position(peer_id: int, pos: Vector2) -> void:
 	if peer_id == multiplayer.get_unique_id():

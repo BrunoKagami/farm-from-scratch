@@ -13,6 +13,9 @@ signal reconnect_failed
 var players: Dictionary = {}
 var is_dedicated := false
 var player_name := ""
+# Mensagem pra Lobby mostrar na próxima vez que _ready() rodar (ex: nome
+# já em uso em outra sessão). Lobby limpa depois de exibir.
+var last_error := ""
 
 # Reconexão automática: navegador mobile suspende a aba quando a tela
 # bloqueia, e o WebSocket morre de verdade nesse meio tempo (confirmado via
@@ -104,6 +107,13 @@ func _build_url(input: String) -> String:
 func disconnect_from_game() -> void:
 	multiplayer.multiplayer_peer = null
 	players.clear()
+	last_address = ""
+	_was_connected = false
+	_reconnecting = false
+
+# Usado quando o servidor recusa a conexão de propósito (ex: nome
+# duplicado) — nesses casos reconectar de novo só repete o mesmo erro.
+func disable_reconnect() -> void:
 	last_address = ""
 	_was_connected = false
 	_reconnecting = false
