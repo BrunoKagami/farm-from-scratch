@@ -83,6 +83,9 @@ func _spawn_remote_body(peer_id: int) -> void:
 	var body := CharacterBody2D.new()
 	body.name = "ServerBody_%d" % peer_id
 	body.position = GameData.PLAYER_SPAWN
+	# Mesma camada do $Player local: colide com o mundo, nunca com outro jogador.
+	body.collision_layer = 2
+	body.collision_mask = 1
 	var shape := CollisionShape2D.new()
 	shape.position = Vector2(-13, 0)
 	var rect := RectangleShape2D.new()
@@ -137,6 +140,23 @@ func _process(delta: float) -> void:
 			if td["state"] == 1:
 				td["timer"] = min(td["timer"] + delta, td["duration"] - 0.01)
 				_sync_tile_visual(pos)
+	_update_debug_positions()
+
+# Debug temporário para diagnosticar divergência de posição entre clientes.
+func _update_debug_positions() -> void:
+	var hud := get_node_or_null("HUD")
+	if hud == null or not hud.has_method("update_debug_positions"):
+		return
+	var lines: Array[String] = []
+	var local_player := get_node_or_null("Player")
+	if local_player:
+		lines.append("eu(%d): %s" % [multiplayer.get_unique_id(), _fmt(local_player.global_position)])
+	for peer_id in remote_players.keys():
+		lines.append("p%d: %s" % [peer_id, _fmt(remote_players[peer_id].position)])
+	hud.update_debug_positions(" | ".join(lines))
+
+func _fmt(v: Vector2) -> String:
+	return "(%d,%d)" % [v.x, v.y]
 
 # --- Movimentação server-authoritative ---
 # Cliente nunca declara sua própria posição final: ou ele É o servidor (e

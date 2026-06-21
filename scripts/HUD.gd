@@ -7,6 +7,10 @@ extends CanvasLayer
 @onready var msg_label: Label    = $MsgLabel
 @onready var tunnel_label: Label = $TunnelLabel
 
+# Debug temporário: mostra X,Y do jogador local e de cada jogador remoto,
+# pra diagnosticar divergência de posição entre clientes.
+var debug_pos_label: Label
+
 func _ready() -> void:
 	GameManager.money_changed.connect(_on_money_changed)
 	_on_money_changed(GameManager.money)
@@ -15,6 +19,19 @@ func _ready() -> void:
 	tunnel_label.visible = multiplayer.is_server()
 	if multiplayer.is_server():
 		tunnel_label.text = "Host  porta 7777  |  cloudflared tunnel --url http://localhost:7777"
+
+	debug_pos_label = Label.new()
+	debug_pos_label.name = "DebugPosLabel"
+	debug_pos_label.anchor_top = 1.0
+	debug_pos_label.anchor_bottom = 1.0
+	debug_pos_label.offset_left = 8
+	debug_pos_label.offset_top = -52
+	debug_pos_label.offset_right = 400
+	debug_pos_label.offset_bottom = -28
+	add_child(debug_pos_label)
+
+func update_debug_positions(text: String) -> void:
+	debug_pos_label.text = text
 
 func _on_money_changed(amount: int) -> void:
 	money_label.text = "$ %d" % amount

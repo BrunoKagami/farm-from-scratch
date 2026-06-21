@@ -12,7 +12,13 @@ var _last_dir := "down"
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
-	pass
+	# Jogadores nunca colidiam entre si antes (PlayerRemote era só visual,
+	# sem física). Os corpos autoritativos no servidor agora são CharacterBody2D
+	# reais, então têm que ficar numa camada separada da dos outros jogadores,
+	# senão colidem entre si e a simulação do servidor diverge da previsão do
+	# cliente (que nunca trata outro jogador como obstáculo).
+	collision_layer = 2
+	collision_mask = 1
 
 func _physics_process(_delta: float) -> void:
 	var direction := Vector2(
