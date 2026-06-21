@@ -112,6 +112,15 @@ func _sync_player(peer_id: int, pos: Vector2, vel: Vector2) -> void:
 		return
 	if remote_players.has(peer_id):
 		remote_players[peer_id].update_state(pos, vel)
+	# Topologia cliente-servidor: um cliente só alcança o servidor
+	# diretamente. O servidor precisa repassar a posição recebida para
+	# os demais clientes, senão eles nunca se veem mover.
+	if multiplayer.is_server() and sender != 0:
+		var nm := get_node_or_null("/root/NetworkManager")
+		if nm:
+			for pid in nm.players.keys():
+				if pid != peer_id and pid != multiplayer.get_unique_id():
+					rpc_id(pid, "_sync_player", peer_id, pos, vel)
 
 # --- Plant / Harvest ---
 
