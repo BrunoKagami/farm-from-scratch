@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rp25yd70o06g"
-path="res://.godot/imported/Movimento_Machado_para_baix.png-3f04c91bf5231a878cc2b822a9865aa4.ctex"
+uid="uid://b0vtwilnjb1s1"
+path="res://.godot/imported/axe_chop_down.png-2769858a6e4f6faba03272f9df9b3b15.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/Movimento_Machado_para_baix.png"
-dest_files=["res://.godot/imported/Movimento_Machado_para_baix.png-3f04c91bf5231a878cc2b822a9865aa4.ctex"]
+source_file="res://assets/characters/axe_chop_down.png"
+dest_files=["res://.godot/imported/axe_chop_down.png-2769858a6e4f6faba03272f9df9b3b15.ctex"]
 
 [params]
 

@@ -21,11 +21,16 @@ var selected_crop: String = "lumifruit"
 var _last_dir := "down"
 var _suppress_correction_until_msec := 0
 
-# Animação de corte: 4 quadros 32x64 (o dobro de alto que os outros, pra
-# caber o machado erguido), então o corpo fica mais baixo dentro do frame
-# do que nas animações normais (32x32). offset compensa isso na hora de
-# tocar, senão o personagem "salta" pra cima enquanto golpeia.
-const CHOP_OFFSET := Vector2(0, -4)
+# Animação de corte: quadros 32x64 (o dobro de alto que os outros, pra
+# caber o machado erguido), então o corpo fica numa altura diferente
+# dentro do frame em cada folha — cada uma com seu próprio offset de
+# compensação, senão o personagem "salta" na tela enquanto golpeia.
+# Só down/up têm sprite próprio por enquanto; left/right usam down como
+# substituto até existir arte dedicada.
+const CHOP_ANIMATIONS := {
+	"down": { "anim": &"chop_down", "path": "res://assets/characters/axe_chop_down.png", "offset": Vector2(0, -4) },
+	"up":   { "anim": &"chop_up",   "path": "res://assets/characters/axe_chop_up.png",   "offset": Vector2(0, -16) },
+}
 const CHOP_DURATION := 0.5
 
 # Machado: item fixo do jogador, não-contável e não-desgastável (não mora
@@ -46,21 +51,22 @@ func _ready() -> void:
 	# cliente (que nunca trata outro jogador como obstáculo).
 	collision_layer = 2
 	collision_mask = 1
-	_add_chop_animation()
+	for dir_name in CHOP_ANIMATIONS:
+		_add_chop_animation(CHOP_ANIMATIONS[dir_name]["anim"], CHOP_ANIMATIONS[dir_name]["path"])
 
-func _add_chop_animation() -> void:
+func _add_chop_animation(anim_name: StringName, path: String) -> void:
 	var sf := _anim.sprite_frames
-	if sf == null or sf.has_animation(&"chop_down"):
+	if sf == null or sf.has_animation(anim_name):
 		return
-	var tex: Texture2D = load("res://assets/characters/Movimento_Machado_para_baix.png")
-	sf.add_animation(&"chop_down")
-	sf.set_animation_loop(&"chop_down", false)
-	sf.set_animation_speed(&"chop_down", 8.0)
+	var tex: Texture2D = load(path)
+	sf.add_animation(anim_name)
+	sf.set_animation_loop(anim_name, false)
+	sf.set_animation_speed(anim_name, 8.0)
 	for i in 4:
 		var at := AtlasTexture.new()
 		at.atlas = tex
 		at.region = Rect2(i * 32, 0, 32, 64)
-		sf.add_frame(&"chop_down", at)
+		sf.add_frame(anim_name, at)
 
 func _physics_process(_delta: float) -> void:
 	var direction := Vector2(
@@ -114,8 +120,11 @@ func _enter_state(new_state: State) -> void:
 			_anim.offset = Vector2.ZERO
 			_anim.play("walk_" + _last_dir)
 		State.CHOP:
-			_anim.offset = CHOP_OFFSET
-			_anim.play("chop_down")
+			# left/right ainda não têm sprite próprio — usa down como
+			# substituto até existir arte dedicada pra essas direções.
+			var conf: Dictionary = CHOP_ANIMATIONS.get(_last_dir, CHOP_ANIMATIONS["down"])
+			_anim.offset = conf["offset"]
+			_anim.play(conf["anim"])
 			_state_locked_until_msec = Time.get_ticks_msec() + int(CHOP_DURATION * 1000)
 
 # Chamado pelo servidor (via WorldGrid) quando a posição autoritativa diverge
