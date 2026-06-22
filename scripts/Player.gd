@@ -25,11 +25,13 @@ var _suppress_correction_until_msec := 0
 # caber o machado erguido), então o corpo fica numa altura diferente
 # dentro do frame em cada folha — cada uma com seu próprio offset de
 # compensação, senão o personagem "salta" na tela enquanto golpeia.
-# Só down/up têm sprite próprio por enquanto; left/right usam down como
-# substituto até existir arte dedicada.
+# "frames" reordena os quadros da folha original (parado, preparando,
+# golpe, recuperação) — a folha "right" foi salva fora dessa ordem.
 const CHOP_ANIMATIONS := {
-	"down": { "anim": &"chop_down", "path": "res://assets/characters/axe_chop_down.png", "offset": Vector2(0, -4) },
-	"up":   { "anim": &"chop_up",   "path": "res://assets/characters/axe_chop_up.png",   "offset": Vector2(0, -16) },
+	"down":  { "anim": &"chop_down",  "path": "res://assets/characters/axe_chop_down.png",  "offset": Vector2(0, -4),  "frames": [0, 1, 2, 3] },
+	"up":    { "anim": &"chop_up",    "path": "res://assets/characters/axe_chop_up.png",    "offset": Vector2(0, -16), "frames": [0, 1, 2, 3] },
+	"left":  { "anim": &"chop_left",  "path": "res://assets/characters/axe_chop_left.png",  "offset": Vector2(0, -14), "frames": [0, 1, 2, 3] },
+	"right": { "anim": &"chop_right", "path": "res://assets/characters/axe_chop_right.png", "offset": Vector2(0, -15), "frames": [0, 2, 3, 1] },
 }
 const CHOP_DURATION := 0.5
 
@@ -52,9 +54,10 @@ func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 1
 	for dir_name in CHOP_ANIMATIONS:
-		_add_chop_animation(CHOP_ANIMATIONS[dir_name]["anim"], CHOP_ANIMATIONS[dir_name]["path"])
+		var conf: Dictionary = CHOP_ANIMATIONS[dir_name]
+		_add_chop_animation(conf["anim"], conf["path"], conf["frames"])
 
-func _add_chop_animation(anim_name: StringName, path: String) -> void:
+func _add_chop_animation(anim_name: StringName, path: String, frame_order: Array) -> void:
 	var sf := _anim.sprite_frames
 	if sf == null or sf.has_animation(anim_name):
 		return
@@ -62,7 +65,7 @@ func _add_chop_animation(anim_name: StringName, path: String) -> void:
 	sf.add_animation(anim_name)
 	sf.set_animation_loop(anim_name, false)
 	sf.set_animation_speed(anim_name, 8.0)
-	for i in 4:
+	for i in frame_order:
 		var at := AtlasTexture.new()
 		at.atlas = tex
 		at.region = Rect2(i * 32, 0, 32, 64)
@@ -120,8 +123,6 @@ func _enter_state(new_state: State) -> void:
 			_anim.offset = Vector2.ZERO
 			_anim.play("walk_" + _last_dir)
 		State.CHOP:
-			# left/right ainda não têm sprite próprio — usa down como
-			# substituto até existir arte dedicada pra essas direções.
 			var conf: Dictionary = CHOP_ANIMATIONS.get(_last_dir, CHOP_ANIMATIONS["down"])
 			_anim.offset = conf["offset"]
 			_anim.play(conf["anim"])
