@@ -21,17 +21,19 @@ var selected_crop: String = "lumifruit"
 var _last_dir := "down"
 var _suppress_correction_until_msec := 0
 
-# Animação de corte: quadros 32x64 (o dobro de alto que os outros, pra
-# caber o machado erguido), então o corpo fica numa altura diferente
-# dentro do frame em cada folha — cada uma com seu próprio offset de
-# compensação, senão o personagem "salta" na tela enquanto golpeia.
+# Animação de corte: quadros bem maiores que os 32x32 normais, pra caber
+# o machado erguido — down/up usam 32x64 (mais alto), left/right usam
+# 64x64 (mais alto E mais largo, já que o golpe se estende pro lado).
+# O corpo fica numa posição diferente dentro do frame em cada folha,
+# então cada uma tem seu próprio offset de compensação, senão o
+# personagem "salta"/desloca na tela enquanto golpeia.
 # "frames" reordena os quadros da folha original (parado, preparando,
 # golpe, recuperação) — a folha "right" foi salva fora dessa ordem.
 const CHOP_ANIMATIONS := {
-	"down":  { "anim": &"chop_down",  "path": "res://assets/characters/axe_chop_down.png",  "offset": Vector2(0, -4),  "frames": [0, 1, 2, 3] },
-	"up":    { "anim": &"chop_up",    "path": "res://assets/characters/axe_chop_up.png",    "offset": Vector2(0, -16), "frames": [0, 1, 2, 3] },
-	"left":  { "anim": &"chop_left",  "path": "res://assets/characters/axe_chop_left.png",  "offset": Vector2(0, -14), "frames": [0, 1, 2, 3] },
-	"right": { "anim": &"chop_right", "path": "res://assets/characters/axe_chop_right.png", "offset": Vector2(0, -15), "frames": [0, 2, 3, 1] },
+	"down":  { "anim": &"chop_down",  "path": "res://assets/characters/axe_chop_down.png",  "frame_size": 32, "offset": Vector2(0, -4),    "frames": [0, 1, 2, 3] },
+	"up":    { "anim": &"chop_up",    "path": "res://assets/characters/axe_chop_up.png",    "frame_size": 32, "offset": Vector2(0, -16),   "frames": [0, 1, 2, 3] },
+	"left":  { "anim": &"chop_left",  "path": "res://assets/characters/axe_chop_left.png",  "frame_size": 64, "offset": Vector2(-1, -14),   "frames": [0, 1, 2, 3] },
+	"right": { "anim": &"chop_right", "path": "res://assets/characters/axe_chop_right.png", "frame_size": 64, "offset": Vector2(-5.5, -15.5), "frames": [0, 2, 3, 1] },
 }
 const CHOP_DURATION := 0.5
 
@@ -55,9 +57,9 @@ func _ready() -> void:
 	collision_mask = 1
 	for dir_name in CHOP_ANIMATIONS:
 		var conf: Dictionary = CHOP_ANIMATIONS[dir_name]
-		_add_chop_animation(conf["anim"], conf["path"], conf["frames"])
+		_add_chop_animation(conf["anim"], conf["path"], conf["frames"], conf["frame_size"])
 
-func _add_chop_animation(anim_name: StringName, path: String, frame_order: Array) -> void:
+func _add_chop_animation(anim_name: StringName, path: String, frame_order: Array, frame_size: int) -> void:
 	var sf := _anim.sprite_frames
 	if sf == null or sf.has_animation(anim_name):
 		return
@@ -68,7 +70,7 @@ func _add_chop_animation(anim_name: StringName, path: String, frame_order: Array
 	for i in frame_order:
 		var at := AtlasTexture.new()
 		at.atlas = tex
-		at.region = Rect2(i * 32, 0, 32, 64)
+		at.region = Rect2(i * frame_size, 0, frame_size, 64)
 		sf.add_frame(anim_name, at)
 
 func _physics_process(_delta: float) -> void:
