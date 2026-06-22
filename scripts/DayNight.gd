@@ -9,6 +9,7 @@ var time_of_day := 0.25
 var _sync_timer := 0.0
 var _target_time := -1.0
 var _lamp_light: PointLight2D
+var _window_lights: Array[PointLight2D] = []
 
 # Pontos de cor ao longo do dia (time_of_day 0.0–1.0 = 00:00–24:00)
 const SKY := [
@@ -33,6 +34,25 @@ func _ready() -> void:
 		# meio do poste (centro do sprite, 32x64).
 		_lamp_light.position = Vector2(0, 0)
 		lamp.add_child(_lamp_light)
+
+	# Janelas da casa: mesmo esquema do poste, só menor e mais fraco.
+	# Posições medidas na própria imagem (shop_building.png, 241x215,
+	# centro do sprite em 120.5,107.5) — janela esquerda e direita do
+	# térreo, ao lado da porta.
+	var shop := get_node_or_null("/root/World/Shop")
+	if shop:
+		_window_lights.append(_make_window_light(shop, Vector2(-50.5, 29.5)))
+		_window_lights.append(_make_window_light(shop, Vector2(49.5, 29.5)))
+
+func _make_window_light(parent: Node, local_pos: Vector2) -> PointLight2D:
+	var light := PointLight2D.new()
+	light.set_script(load("res://scripts/LampLight.gd"))
+	light.radius_scale = 0.18
+	light.max_energy = 0.5
+	light.light_color = Color(1.0, 0.85, 0.55)
+	light.position = local_pos
+	parent.add_child(light)
+	return light
 
 func _process(delta: float) -> void:
 	if multiplayer.is_server():
@@ -82,12 +102,15 @@ func _update_light() -> void:
 	var cm := get_node_or_null("/root/World/CanvasModulate")
 	if cm:
 		cm.color = sky
+	var luminance := (sky.r + sky.g + sky.b) / 3.0
+	var intensity: float = clamp((1.0 - luminance) * 1.8, 0.0, 1.0)
 	if _lamp_light:
 		# Reaproveita a própria cor do céu: quanto mais escuro, mais a
 		# lâmpada acende — acompanha o amanhecer/anoitecer automaticamente,
 		# sem precisar de um segundo conjunto de horários pra manter.
-		var luminance := (sky.r + sky.g + sky.b) / 3.0
-		_lamp_light.set_intensity(clamp((1.0 - luminance) * 1.8, 0.0, 1.0))
+		_lamp_light.set_intensity(intensity)
+	for w in _window_lights:
+		w.set_intensity(intensity)
 
 func _angular_diff(a: float, b: float) -> float:
 	var d := b - a

@@ -1,11 +1,17 @@
 extends PointLight2D
 
+# Reaproveitado tanto pro poste quanto pras janelas da casa — só muda a
+# escala e o teto de brilho (janela é menor e mais fraca que o poste).
+@export var radius_scale: float = 0.6
+@export var max_energy: float = 1.0
+@export var light_color: Color = Color(1.0, 0.82, 0.45)
+
 func _ready() -> void:
 	texture = _build_texture()
-	color = Color(1.0, 0.82, 0.45)
-	# Raio efetivo = (largura/2) * texture_scale = 128 * 0.6 = ~77px — um
-	# halo de luz local em volta do poste, não um clarão cobrindo a tela.
-	texture_scale = 0.6
+	color = light_color
+	# Raio efetivo = (largura/2) * texture_scale = 128 * radius_scale — um
+	# halo de luz local, não um clarão cobrindo a tela.
+	texture_scale = radius_scale
 	energy = 0.0
 
 func _build_texture() -> GradientTexture2D:
@@ -22,4 +28,4 @@ func _build_texture() -> GradientTexture2D:
 	return tex
 
 func set_intensity(value: float) -> void:
-	energy = value
+	energy = value * max_energy
