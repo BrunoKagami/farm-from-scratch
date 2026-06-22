@@ -48,7 +48,7 @@ func _make_window_light(parent: Node, local_pos: Vector2) -> PointLight2D:
 	var light := PointLight2D.new()
 	light.set_script(load("res://scripts/LampLight.gd"))
 	light.radius_scale = 0.18
-	light.max_energy = 0.5
+	light.max_energy = 0.7
 	light.light_color = Color(1.0, 0.85, 0.55)
 	light.position = local_pos
 	parent.add_child(light)
