@@ -29,7 +29,9 @@ func _ready() -> void:
 	if lamp:
 		_lamp_light = PointLight2D.new()
 		_lamp_light.set_script(load("res://scripts/LampLight.gd"))
-		_lamp_light.position = Vector2(0, -26)
+		# No topo (-26) parecia estranho em visão top-down — testando no
+		# meio do poste (centro do sprite, 32x64).
+		_lamp_light.position = Vector2(0, 0)
 		lamp.add_child(_lamp_light)
 
 func _process(delta: float) -> void:
