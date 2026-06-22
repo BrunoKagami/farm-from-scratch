@@ -33,7 +33,7 @@ const CHOP_ANIMATIONS := {
 	"down":  { "anim": &"chop_down",  "path": "res://assets/characters/axe_chop_down.png",  "frame_size": 32, "offset": Vector2(0, -4),    "frames": [0, 1, 2, 3] },
 	"up":    { "anim": &"chop_up",    "path": "res://assets/characters/axe_chop_up.png",    "frame_size": 32, "offset": Vector2(0, -16),   "frames": [0, 1, 2, 3] },
 	"left":  { "anim": &"chop_left",  "path": "res://assets/characters/axe_chop_left.png",  "frame_size": 64, "offset": Vector2(-1, -14),   "frames": [0, 1, 2, 3] },
-	"right": { "anim": &"chop_right", "path": "res://assets/characters/axe_chop_right.png", "frame_size": 64, "offset": Vector2(-5.5, -15.5), "frames": [0, 2, 3, 1] },
+	"right": { "anim": &"chop_right", "path": "res://assets/characters/axe_chop_right.png", "frame_size": 64, "offset": Vector2(2, -14), "frames": [3, 2, 1, 0] },
 }
 const CHOP_DURATION := 0.5
 
